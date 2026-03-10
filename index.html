@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Aroor Rakesh's 2D Animation Kit</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+<!-- FFmpeg for MP4 export -->
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overflow:hidden;background:#0c0c18;color:#e0e0f0;font-family:'Segoe UI',system-ui,sans-serif;}
@@ -23,7 +25,7 @@ html,body{height:100%;overflow:hidden;background:#0c0c18;color:#e0e0f0;font-fami
 .ctitle{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:#6060a0;margin-bottom:9px;display:flex;align-items:center;gap:5px;}
 .ctitle em{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;background:#252545;border-radius:50%;font-size:9px;font-style:normal;color:#c4b5fd;}
 
-/* ── Upload rows ── */
+/* Upload rows */
 .uprow{display:flex;align-items:center;gap:8px;background:#181830;border:1px solid #333360;border-radius:7px;padding:7px 10px;}
 .uprow .up-icon{font-size:17px;flex-shrink:0;}
 .uprow .up-text{flex:1;min-width:0;}
@@ -75,23 +77,39 @@ input[type=color]{width:34px;height:27px;border:1px solid #333360;border-radius:
   color:#e0e0f0;font-size:13px;resize:vertical;min-height:58px;line-height:1.5;
   font-family:'Noto Sans Kannada','Noto Sans','Segoe UI',sans-serif;margin-top:4px;}
 .bubble-ta:focus{outline:none;border-color:#8b5cf6;}
-/* Arrow-side grid */
 .aside-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px;}
 
 /* MAIN */
-.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px;background:radial-gradient(ellipse at center,#141428,#07070e);overflow:hidden;}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px 18px;background:radial-gradient(ellipse at center,#141428,#07070e);overflow-x:hidden;overflow-y:auto;}
 #canvas{border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px rgba(139,92,246,.12);}
-.sbar{display:flex;align-items:center;gap:8px;background:#14142a;border:1px solid #252545;border-radius:7px;padding:6px 14px;font-size:12px;color:#7070a0;width:100%;max-width:960px;}
+
+/* Timeline */
+.tl-wrap{flex-shrink:0;}
+.tl-canvas-box{position:relative;background:#0e0e22;border:1px solid #252545;border-radius:8px;overflow:hidden;cursor:crosshair;}
+#tlCanvas{display:block;width:100%;height:64px;}
+.tl-foot{display:flex;justify-content:space-between;align-items:center;padding:3px 6px;font-size:10px;color:#5050a0;}
+.tl-foot span{color:#6060a0;}
+
+/* Status bar */
+.sbar{display:flex;align-items:center;gap:8px;background:#14142a;border:1px solid #252545;border-radius:7px;padding:6px 14px;font-size:12px;color:#7070a0;width:100%;flex-shrink:0;}
 .sdot{width:7px;height:7px;border-radius:50%;background:#333360;flex-shrink:0;}
 .sdot.ready{background:#22c55e;}
 .sdot.play{background:#3b82f6;animation:pd .8s infinite;}
 .sdot.rec{background:#ef4444;animation:pd .6s infinite;}
 @keyframes pd{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* Trim info strip */
+.trim-strip{display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap;}
+.trim-badge{background:#181830;border:1px solid #333360;border-radius:5px;padding:3px 8px;font-size:10px;color:#a78bfa;}
+
+/* Checkbox toggle */
+.chk-row{display:flex;align-items:center;gap:7px;font-size:11px;color:#7070a0;cursor:pointer;margin-top:6px;}
+.chk-row input{accent-color:#8b5cf6;cursor:pointer;}
 </style>
 </head>
 <body>
 
-<!-- File inputs — visible, at page root, no JS wrapping -->
+<!-- Hidden file inputs -->
 <input type="file" id="bgFile"    accept="image/*"  onchange="loadBg(this)"    style="position:fixed;left:-9999px;top:0">
 <input type="file" id="charFile"  accept="image/*"  onchange="loadChar(this)"  style="position:fixed;left:-9999px;top:20px">
 <input type="file" id="audioFile" accept="audio/*"  onchange="loadAudio(this)" style="position:fixed;left:-9999px;top:40px">
@@ -163,7 +181,7 @@ input[type=color]{width:34px;height:27px;border:1px solid #333360;border-radius:
       <div class="lm-tip">
         <span class="dot8" style="background:#60a5fa"></span><b>Blue</b> = eyes &nbsp;
         <span class="dot8" style="background:#f472b6"></span><b>Pink</b> = mouth<br>
-        Drag the dots on the canvas to align with your character's face
+        Drag the dots on canvas to align with your character's face
       </div>
       <div class="row2" style="margin-top:8px">
         <button class="btn btn-o" onclick="resetLandmarks()">↺ Reset</button>
@@ -186,6 +204,23 @@ input[type=color]{width:34px;height:27px;border:1px solid #333360;border-radius:
           <div class="up-hint">MP3 · WAV · OGG</div>
         </div>
         <label class="up-btn" for="audioFile">Choose</label>
+      </div>
+      <!-- Audio Trim controls (shown after audio loaded) -->
+      <div id="audioTrimPanel" style="display:none">
+        <div class="trim-strip">
+          <span style="font-size:11px;color:#7070a0">✂ Trim:</span>
+          <span class="trim-badge">In: <span id="trimInVal">0.0s</span></span>
+          <span class="trim-badge">Out: <span id="trimOutVal">—</span></span>
+          <button class="btn btn-o" onclick="resetTrim()" style="width:auto;padding:3px 8px;font-size:10px;margin:0">Reset</button>
+        </div>
+        <label class="chk-row">
+          <input type="checkbox" id="loopAudio"> 🔁 Loop audio
+        </label>
+        <div class="lm-tip" style="margin-top:7px;font-size:10px">
+          Drag <span style="color:#a78bfa">▶ purple</span> handle to set trim-in,
+          <span style="color:#f472b6">◀ pink</span> handle for trim-out.
+          Click waveform to scrub.
+        </div>
       </div>
     </div>
 
@@ -236,9 +271,40 @@ input[type=color]{width:34px;height:27px;border:1px solid #333360;border-radius:
 
       <div class="sl-row">
         <div class="sl-hd"><span>Text <span style="color:#a78bfa">(ಕನ್ನಡ / any language)</span></span></div>
-        <textarea id="bubbleText" class="bubble-ta" placeholder="Type here… ಇಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ" oninput="redraw()">ಹಲೋ!</textarea>
+        <textarea id="bubbleText" class="bubble-ta" placeholder="Type here… ಇಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ" oninput="TW.currentChars=0;redraw()">ಹಲೋ!</textarea>
       </div>
 
+      <!-- ── Typewriter Effect ── -->
+      <div style="margin-top:8px;border-top:1px solid #252545;padding-top:8px">
+        <div class="sl-hd" style="margin-bottom:5px"><span>⌨ Typewriter Effect</span></div>
+        <button id="twToggle" class="btn btn-o" onclick="toggleTypewriter()" style="margin-bottom:7px">Enable Typewriter</button>
+        <div id="twControls" style="display:none">
+          <div class="sl-row">
+            <div class="sl-hd"><span>Speed</span><span class="sl-val" id="twSpeedVal">12 chars/s</span></div>
+            <input type="range" id="twSpeed" min="1" max="60" value="12"
+              oninput="TW.speed=+this.value;document.getElementById('twSpeedVal').textContent=this.value+' chars/s'">
+          </div>
+          <div class="lm-tip" style="font-size:10px">
+            Text reveals during playback. Preview shows full text.
+            <span id="twProgress" style="color:#a78bfa"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Bubble Style ── -->
+      <div style="margin-top:8px;border-top:1px solid #252545;padding-top:8px">
+        <div class="sl-hd" style="margin-bottom:5px"><span>Bubble Style</span></div>
+        <div class="ratio-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px">
+          <button class="rbtn on" data-bstyle="classic" onclick="setBubbleStyle(this)">💬 Classic</button>
+          <button class="rbtn" data-bstyle="thought" onclick="setBubbleStyle(this)">☁ Thought</button>
+          <button class="rbtn" data-bstyle="burst"   onclick="setBubbleStyle(this)">⚡ Burst</button>
+          <button class="rbtn" data-bstyle="minimal" onclick="setBubbleStyle(this)">▭ Minimal</button>
+          <button class="rbtn" data-bstyle="neon"    onclick="setBubbleStyle(this)">✦ Neon</button>
+          <button class="rbtn" data-bstyle="comic"   onclick="setBubbleStyle(this)">📖 Comic</button>
+        </div>
+      </div>
+
+      <!-- ── Appearance Controls ── -->
       <div class="sl-row">
         <div class="sl-hd"><span>Font Size</span><span class="sl-val" id="bFontVal">32px</span></div>
         <input type="range" id="bFont" min="10" max="80" value="32"
@@ -297,7 +363,7 @@ input[type=color]{width:34px;height:27px;border:1px solid #333360;border-radius:
     <div class="card">
       <div class="ctitle"><em>8</em> Export</div>
       <button class="btn btn-p" id="previewBtn" onclick="togglePreview()">▶ Preview</button>
-      <button class="btn btn-g" id="recordBtn"  onclick="startRecord()" disabled>⏺ Record Video</button>
+      <button class="btn btn-g" id="recordBtn"  onclick="startRecord()" disabled>⏺ Record MP4</button>
       <button class="btn btn-r" id="stopBtn"    onclick="stopRecord()" style="display:none">⏹ Stop &amp; Download</button>
     </div>
 
@@ -307,6 +373,19 @@ input[type=color]{width:34px;height:27px;border:1px solid #333360;border-radius:
 <!-- ══════ MAIN ══════ -->
 <div class="main">
   <canvas id="canvas" width="1280" height="720"></canvas>
+
+  <!-- Timeline -->
+  <div class="tl-wrap" id="tlWrap" style="display:none">
+    <div class="tl-canvas-box">
+      <canvas id="tlCanvas" height="64"></canvas>
+    </div>
+    <div class="tl-foot">
+      <span id="tlCurTime">0:00.0</span>
+      <span>◀ drag purple = trim-in · drag pink = trim-out · click = scrub ▶</span>
+      <span id="tlDurTime">0:00.0</span>
+    </div>
+  </div>
+
   <div class="sbar">
     <div class="sdot" id="sdot"></div>
     <span id="smsg">Upload background, character and audio to begin</span>
@@ -326,8 +405,7 @@ const bgImg  = {img:null};
 const charObj= {img:null, scale:1, offsetX:0, offsetY:0};
 
 // Speech bubble state
-const bubble = { visible:false, x:80, y:55, bh:80, arrowSide:'bottom' };
-
+const bubble = { visible:false, x:80, y:55, bh:80, arrowSide:'bottom', style:'classic' };
 
 const LM = {
   eyeL : {x:0,y:0,col:'#60a5fa',lbl:'L Eye'},
@@ -343,10 +421,28 @@ const A={
   headAngle:0, headBobY:0,
   audioCtx:null,analyser:null,audioEl:null,audioSrc:null,
 };
-let animId=null, mediaRecorder=null, recChunks=[];
+let animId=null, mediaRecorder=null, recChunks=[], recMimeType='video/webm';
 
-const canvas=document.getElementById('canvas');
-const ctx=canvas.getContext('2d');
+// ── Timeline state ──
+const TL = {
+  duration: 0,
+  trimStart: 0,
+  trimEnd: null,       // null = no trim set yet (full audio)
+  waveform: null,      // Float32Array, normalised 0-1
+  tlDragging: null,    // 'trimIn' | 'trimOut' | 'playhead'
+};
+
+// ── Typewriter state ──
+const TW = {
+  enabled: false,
+  speed: 12,           // chars per second
+  currentChars: 0,     // current visible char count (float)
+};
+
+const canvas  = document.getElementById('canvas');
+const ctx     = canvas.getContext('2d');
+const tlCanvas = document.getElementById('tlCanvas');
+const tl2d    = tlCanvas.getContext('2d');
 
 // roundRect polyfill
 if(!ctx.roundRect){
@@ -365,7 +461,7 @@ if(!ctx.roundRect){
 //  ASPECT RATIO
 // ═══════════════════════════════
 function setRatio(btn){
-  document.querySelectorAll('.rbtn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.rbtn[data-r]').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
   curRatio=btn.dataset.r;
   const {w,h}=RATIOS[curRatio];
@@ -380,11 +476,29 @@ function setRatio(btn){
 }
 
 function sizeCanvas(){
-  const mw=window.innerWidth-300, mh=window.innerHeight-58;
-  const ar=canvas.width/canvas.height;
-  let dw=mw, dh=mw/ar;
-  if(dh>mh){dh=mh; dw=mh*ar;}
-  canvas.style.width=dw+'px'; canvas.style.height=dh+'px';
+  const mw = window.innerWidth - 300;
+  const tlWrapEl = document.getElementById('tlWrap');
+  const tlVisible = tlWrapEl.style.display !== 'none';
+  // Reserve space: sbar ~36px, padding 28px, gaps 24px, timeline 90px when visible
+  const reserved = 36 + 28 + 24 + (tlVisible ? 90 : 0);
+  const mh = window.innerHeight - reserved;
+  const ar = canvas.width / canvas.height;
+  let dw = mw, dh = mw / ar;
+  if(dh > mh){ dh = mh; dw = mh * ar; }
+  dw = Math.max(240, dw); dh = Math.max(135, dh);
+  canvas.style.width  = dw + 'px';
+  canvas.style.height = dh + 'px';
+  // Match timeline and status bar width to canvas
+  tlWrapEl.style.width = dw + 'px';
+  document.querySelector('.sbar').style.width = dw + 'px';
+  // Size timeline canvas logical pixels to match display pixels
+  if(tlVisible){
+    tlCanvas.width  = Math.round(dw);
+    tlCanvas.height = 64;
+    tlCanvas.style.width  = dw + 'px';
+    tlCanvas.style.height = '64px';
+    drawTimeline();
+  }
 }
 window.addEventListener('resize',sizeCanvas);
 sizeCanvas();
@@ -424,21 +538,65 @@ function loadAudio(inp){
   const f=inp.files[0];
   if(A.audioEl){A.audioEl.pause();A.audioEl.src='';}
   if(A.audioCtx) A.audioCtx.close();
-  A.audioEl=new Audio();
-  A.audioEl.src=URL.createObjectURL(f);
-  A.audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  A.analyser=A.audioCtx.createAnalyser();
+
+  A.audioEl = new Audio();
+  A.audioEl.src = URL.createObjectURL(f);
+  A.audioCtx = new(window.AudioContext||window.webkitAudioContext)();
+  A.analyser = A.audioCtx.createAnalyser();
   A.analyser.fftSize=512;
   A.analyser.smoothingTimeConstant=0.78;
-  A.audioSrc=A.audioCtx.createMediaElementSource(A.audioEl);
+  A.audioSrc = A.audioCtx.createMediaElementSource(A.audioEl);
   A.audioSrc.connect(A.analyser);
   A.analyser.connect(A.audioCtx.destination);
-  A.audioEl.onended=()=>{ if(A.isRecording) stopRecord(); else stopPreview(); };
+
+  A.audioEl.onended = ()=>{
+    const loop = document.getElementById('loopAudio').checked;
+    if(loop){
+      A.audioEl.currentTime = TL.trimStart;
+      A.audioEl.play();
+    } else {
+      if(A.isRecording) stopRecord(); else stopPreview();
+    }
+  };
+
   document.getElementById('recordBtn').disabled=false;
   markDone('audioRow','audioName',f.name,'🎵');
   setStatus('ready','Audio ready — press ▶ Preview or ⏺ Record');
+
+  // Decode audio for waveform + duration
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    A.audioCtx.decodeAudioData(ev.target.result.slice(0), (buf)=>{
+      TL.duration = buf.duration;
+      TL.trimStart = 0;
+      TL.trimEnd = buf.duration;
+      generateWaveform(buf);
+      document.getElementById('tlWrap').style.display='block';
+      document.getElementById('audioTrimPanel').style.display='block';
+      document.getElementById('trimOutVal').textContent = fmtTime(buf.duration);
+      document.getElementById('tlDurTime').textContent  = fmtTime(buf.duration);
+      sizeCanvas(); // re-layout to account for timeline
+      drawTimeline();
+    }, ()=>{ /* decode error — waveform unavailable */ });
+  };
+  reader.readAsArrayBuffer(f);
 }
 
+function generateWaveform(audioBuffer){
+  const raw = audioBuffer.getChannelData(0);
+  const buckets = 1200;
+  const step = Math.floor(raw.length / buckets);
+  const wave = new Float32Array(buckets);
+  for(let i=0;i<buckets;i++){
+    let s=0;
+    for(let j=0;j<step;j++) s+=Math.abs(raw[i*step+j]||0);
+    wave[i]=s/step;
+  }
+  const mx = Math.max(...wave);
+  if(mx>0) for(let i=0;i<wave.length;i++) wave[i]/=mx;
+  TL.waveform = wave;
+  drawTimeline();
+}
 
 function markDone(rowId,nameId,fname,icon){
   document.getElementById(rowId).classList.add('done');
@@ -446,14 +604,154 @@ function markDone(rowId,nameId,fname,icon){
 }
 
 // ═══════════════════════════════
+//  TIMELINE DRAW
+// ═══════════════════════════════
+function drawTimeline(){
+  const W = tlCanvas.width || 800;
+  const H = 64;
+  tl2d.clearRect(0,0,W,H);
+
+  if(!TL.duration){
+    tl2d.fillStyle='#1a1a3a';
+    tl2d.fillRect(0,0,W,H);
+    tl2d.fillStyle='#404070';
+    tl2d.font='12px Segoe UI'; tl2d.textAlign='center'; tl2d.textBaseline='middle';
+    tl2d.fillText('Upload audio to see timeline',W/2,H/2);
+    return;
+  }
+
+  const dur = TL.duration;
+  const inX  = (TL.trimStart/dur)*W;
+  const outX = (TL.trimEnd  /dur)*W;
+
+  // Background
+  tl2d.fillStyle='#0e0e22';
+  tl2d.fillRect(0,0,W,H);
+
+  // Outside-trim dimming
+  tl2d.fillStyle='rgba(0,0,0,0.45)';
+  tl2d.fillRect(0,0,inX,H);
+  tl2d.fillRect(outX,0,W-outX,H);
+
+  // Active region highlight
+  tl2d.fillStyle='rgba(139,92,246,0.08)';
+  tl2d.fillRect(inX,0,outX-inX,H);
+
+  // Waveform
+  if(TL.waveform){
+    const step = TL.waveform.length/W;
+    for(let px=0;px<W;px++){
+      const si = Math.min(TL.waveform.length-1,Math.floor(px*step));
+      const val = TL.waveform[si];
+      const h2  = val*(H*0.44);
+      const t   = (px/W)*dur;
+      const active = t>=TL.trimStart && t<=TL.trimEnd;
+      tl2d.strokeStyle = active ? '#6050c0' : '#28284a';
+      tl2d.lineWidth=1;
+      tl2d.beginPath();
+      tl2d.moveTo(px,H/2-h2); tl2d.lineTo(px,H/2+h2);
+      tl2d.stroke();
+    }
+  }
+
+  // Trim-in handle (purple)
+  tl2d.fillStyle='#8b5cf6';
+  tl2d.fillRect(inX-1,0,3,H);
+  tl2d.beginPath();
+  tl2d.moveTo(inX-7,0); tl2d.lineTo(inX+7,0); tl2d.lineTo(inX,14);
+  tl2d.closePath(); tl2d.fillStyle='#a78bfa'; tl2d.fill();
+
+  // Trim-out handle (pink)
+  tl2d.fillStyle='#f472b6';
+  tl2d.fillRect(outX-1,0,3,H);
+  tl2d.beginPath();
+  tl2d.moveTo(outX-7,H); tl2d.lineTo(outX+7,H); tl2d.lineTo(outX,H-14);
+  tl2d.closePath(); tl2d.fillStyle='#f9a8d4'; tl2d.fill();
+
+  // Time grid
+  const secStep = Math.max(0.5,Math.ceil(dur/14)*0.5);
+  tl2d.fillStyle='#2a2a50';
+  tl2d.font='9px Segoe UI'; tl2d.textAlign='center'; tl2d.textBaseline='top';
+  for(let s=0;s<=dur;s+=secStep){
+    const x=(s/dur)*W;
+    tl2d.fillStyle='#252545';
+    tl2d.fillRect(x,H-10,1,10);
+    tl2d.fillStyle='#404070';
+    tl2d.fillText(fmtTime(s),x,H-22);
+  }
+
+  // Playhead (red)
+  if(A.audioEl && TL.duration){
+    const px=(A.audioEl.currentTime/dur)*W;
+    tl2d.strokeStyle='#ef4444'; tl2d.lineWidth=2;
+    tl2d.beginPath(); tl2d.moveTo(px,0); tl2d.lineTo(px,H); tl2d.stroke();
+    tl2d.fillStyle='#ef4444';
+    tl2d.beginPath(); tl2d.arc(px,H/2,5,0,Math.PI*2); tl2d.fill();
+    // Update time display
+    document.getElementById('tlCurTime').textContent = fmtTime(A.audioEl.currentTime);
+  }
+}
+
+// Timeline mouse interaction
+function tlPos(e){
+  const r=tlCanvas.getBoundingClientRect();
+  const raw=(e.clientX-r.left)*(tlCanvas.width/r.width);
+  return Math.max(0,Math.min(tlCanvas.width,raw));
+}
+function tlTimeFromX(x){ return (x/tlCanvas.width)*TL.duration; }
+
+tlCanvas.addEventListener('mousedown',e=>{
+  if(!TL.duration) return;
+  const x = tlPos(e);
+  const inX  = (TL.trimStart/TL.duration)*tlCanvas.width;
+  const outX = (TL.trimEnd  /TL.duration)*tlCanvas.width;
+  if(Math.abs(x-inX)<10)       TL.tlDragging='trimIn';
+  else if(Math.abs(x-outX)<10) TL.tlDragging='trimOut';
+  else {
+    TL.tlDragging='playhead';
+    const t=tlTimeFromX(x);
+    if(A.audioEl) A.audioEl.currentTime=Math.max(TL.trimStart,Math.min(TL.trimEnd,t));
+    drawTimeline();
+  }
+});
+document.addEventListener('mousemove',e=>{
+  if(!TL.tlDragging) return;
+  const x = tlPos(e);
+  const t = tlTimeFromX(x);
+  if(TL.tlDragging==='trimIn'){
+    TL.trimStart=Math.max(0,Math.min(TL.trimEnd-0.1,t));
+    document.getElementById('trimInVal').textContent=fmtTime(TL.trimStart);
+  } else if(TL.tlDragging==='trimOut'){
+    TL.trimEnd=Math.max(TL.trimStart+0.1,Math.min(TL.duration,t));
+    document.getElementById('trimOutVal').textContent=fmtTime(TL.trimEnd);
+  } else if(TL.tlDragging==='playhead'&&A.audioEl){
+    A.audioEl.currentTime=Math.max(TL.trimStart,Math.min(TL.trimEnd,t));
+  }
+  drawTimeline();
+});
+document.addEventListener('mouseup',()=>{ TL.tlDragging=null; });
+
+function updateTrimDisplay(){
+  document.getElementById('trimInVal').textContent  = fmtTime(TL.trimStart);
+  document.getElementById('trimOutVal').textContent = fmtTime(TL.trimEnd);
+}
+
+function resetTrim(){
+  TL.trimStart=0;
+  TL.trimEnd=TL.duration;
+  updateTrimDisplay();
+  drawTimeline();
+}
+
+// ═══════════════════════════════
 //  LANDMARKS
 // ═══════════════════════════════
 function resetLandmarks(){
-  const W=canvas.width, H=canvas.height;
+  const W=canvas.width,H=canvas.height;
   const cx=W/2, cy=H*0.30, g=W*0.07;
-  LM.eyeL.x=cx-g;  LM.eyeL.y=cy;
-  LM.eyeR.x=cx+g;  LM.eyeR.y=cy;
-  LM.mouth.x=cx;    LM.mouth.y=cy+g*1.0;
+  LM.eyeL.x=cx-g; LM.eyeL.y=cy;
+  LM.eyeR.x=cx+g; LM.eyeR.y=cy;
+  LM.mouth.x=cx;   LM.mouth.y=cy+g*1.0;
   redraw();
 }
 function toggleSetup(){
@@ -476,6 +774,29 @@ function autoSkin(){
 }
 
 // ═══════════════════════════════
+//  TYPEWRITER
+// ═══════════════════════════════
+function toggleTypewriter(){
+  TW.enabled=!TW.enabled;
+  const btn=document.getElementById('twToggle');
+  btn.textContent=TW.enabled?'Disable Typewriter':'Enable Typewriter';
+  btn.className=TW.enabled?'btn btn-p':'btn btn-o';
+  document.getElementById('twControls').style.display=TW.enabled?'block':'none';
+  TW.currentChars=0;
+  redraw();
+}
+
+// ═══════════════════════════════
+//  BUBBLE STYLE
+// ═══════════════════════════════
+function setBubbleStyle(btn){
+  document.querySelectorAll('[data-bstyle]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  bubble.style=btn.dataset.bstyle;
+  redraw();
+}
+
+// ═══════════════════════════════
 //  PREVIEW / RECORD
 // ═══════════════════════════════
 function togglePreview(){
@@ -489,7 +810,7 @@ function stopPreview(){
   if(A.audioEl) A.audioEl.pause();
   if(animId) cancelAnimationFrame(animId);
   document.getElementById('previewBtn').textContent='▶ Preview';
-  setStatus('ready','Stopped'); redraw();
+  setStatus('ready','Stopped'); redraw(); drawTimeline();
 }
 function startRecord(){
   if(!A.audioEl){setStatus('','⚠ Upload audio first');return;}
@@ -499,8 +820,17 @@ function startRecord(){
   const ad=A.audioCtx.createMediaStreamDestination();
   A.analyser.connect(ad);
   const cs=new MediaStream([...vs.getVideoTracks(),...ad.stream.getAudioTracks()]);
-  const mime=MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')?'video/webm;codecs=vp9,opus':'video/webm';
-  mediaRecorder=new MediaRecorder(cs,{mimeType:mime});
+  // Try native MP4 first, then WebM variants
+  const mimeTypes=[
+    'video/mp4;codecs=avc1,mp4a.40.2',
+    'video/mp4;codecs=h264,aac',
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm'
+  ];
+  recMimeType = mimeTypes.find(t=>MediaRecorder.isTypeSupported(t)) || 'video/webm';
+  mediaRecorder=new MediaRecorder(cs,{mimeType:recMimeType});
   mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recChunks.push(e.data);};
   mediaRecorder.onstop=exportVid;
   mediaRecorder.start(100);
@@ -521,18 +851,54 @@ function stopRecord(){
   document.getElementById('previewBtn').textContent='▶ Preview';
   setStatus('ready','Processing…'); redraw();
 }
-function exportVid(){
-  const blob=new Blob(recChunks,{type:'video/webm'});
-  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'animation_'+Date.now()+'.webm'});
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setStatus('ready','✅ Video downloaded!');
+async function exportVid(){
+  const isNativeMP4 = recMimeType.startsWith('video/mp4');
+  const rawBlob = new Blob(recChunks, {type: recMimeType});
+
+  // If browser recorded natively as MP4, just download it directly
+  if(isNativeMP4){
+    const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(rawBlob),download:'animation_'+Date.now()+'.mp4'});
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setStatus('ready','✅ MP4 downloaded!');
+    return;
+  }
+
+  // Otherwise try FFmpeg.wasm to convert WebM → MP4
+  setStatus('rec','⏳ Converting to MP4…');
+  try{
+    if(typeof FFmpeg === 'undefined') throw new Error('FFmpeg not loaded');
+    const {createFFmpeg, fetchFile} = FFmpeg;
+    const ff = createFFmpeg({log:false, corePath:'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'});
+    await ff.load();
+    const inName  = 'input.webm';
+    const outName = 'output.mp4';
+    ff.FS('writeFile', inName, await fetchFile(rawBlob));
+    // Re-encode: h264 video + aac audio
+    await ff.run('-i', inName, '-c:v', 'libx264', '-preset', 'fast', '-crf', '22',
+                 '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', outName);
+    const data = ff.FS('readFile', outName);
+    const mp4Blob = new Blob([data.buffer], {type:'video/mp4'});
+    const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(mp4Blob),download:'animation_'+Date.now()+'.mp4'});
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setStatus('ready','✅ MP4 downloaded!');
+  } catch(err){
+    console.warn('FFmpeg conversion failed, falling back to WebM:', err);
+    // Fallback: just download the WebM
+    const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(rawBlob),download:'animation_'+Date.now()+'.webm'});
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setStatus('ready','✅ WebM downloaded (MP4 conversion unavailable)');
+  }
 }
 function beginPlay(rec){
   if(A.audioCtx.state==='suspended') A.audioCtx.resume();
   setupMode=false;
   document.getElementById('lockBtn').textContent='✏️ Edit';
   A.isPlaying=true; A.t=0; A.blinkTimer=0;
-  A.audioEl.currentTime=0; A.audioEl.play();
+  // Typewriter: reset char counter
+  TW.currentChars=0;
+  // Respect trim-in point
+  A.audioEl.currentTime = TL.trimStart;
+  A.audioEl.play();
   A.lastTs=performance.now();
   setStatus(rec?'rec':'play', rec?'⏺ Recording…':'▶ Playing…');
   loop(A.lastTs);
@@ -546,27 +912,51 @@ function loop(ts){
   const dt=Math.min((ts-A.lastTs)/1000,0.05);
   A.lastTs=ts; A.t+=dt;
   update(dt); drawFrame();
+  // Throttle timeline redraws to ~15fps
+  if(Math.floor(A.t*15)!==Math.floor((A.t-dt)*15)) drawTimeline();
   animId=requestAnimationFrame(loop);
 }
+
 function update(dt){
-  // Lip sync — focus on vocal formant range ~200Hz–3kHz
+  // ── Check trim-out boundary (only when a real trimEnd is set) ──
+  if(TL.trimEnd !== null && A.audioEl){
+    if(A.audioEl.currentTime >= TL.trimEnd - 0.05){
+      const loop = document.getElementById('loopAudio').checked;
+      if(loop){
+        A.audioEl.currentTime = TL.trimStart;
+        TW.currentChars = 0;
+        return;
+      } else {
+        if(A.isRecording) stopRecord(); else stopPreview();
+        return;
+      }
+    }
+  }
+
+  // ── Typewriter ──
+  if(TW.enabled && bubble.visible){
+    const fullText = document.getElementById('bubbleText')?.value || '';
+    const totalChars = [...fullText].length;
+    TW.currentChars = Math.min(totalChars, TW.currentChars + TW.speed * dt);
+    if(document.getElementById('twProgress'))
+      document.getElementById('twProgress').textContent =
+        ` (${Math.floor(TW.currentChars)}/${totalChars})`;
+  }
+
+  // ── Lip sync ──
   const freq=new Uint8Array(A.analyser.frequencyBinCount);
   A.analyser.getByteFrequencyData(freq);
-  // bins ~3% to 35% of spectrum cover speech fundamentals
   const lo=Math.floor(freq.length*0.03), hi=Math.floor(freq.length*0.35);
   let sum=0,pk=0;
-  for(let i=lo;i<hi;i++){sum+=freq[i]; if(freq[i]>pk) pk=freq[i];}
+  for(let i=lo;i<hi;i++){sum+=freq[i]; if(freq[i]>pk)pk=freq[i];}
   const avg=sum/(hi-lo);
-  // Blend average + peak for more responsive but not jumpy movement
-  const signal = avg * 0.5 + pk * 0.5;
-  const sens   = document.getElementById('lipSens').value / 65;
-  // Lower noise floor: signal just needs to exceed ~15 to start opening
-  const target = Math.min(1, Math.max(0, (signal - 15) / 70 * sens));
-  // Fast attack (snap open), slower release (natural jaw close)
-  const speed  = target > A.mouthOpen ? 0.6 : 0.22;
-  A.mouthOpen += (target - A.mouthOpen) * speed;
+  const signal=avg*0.5+pk*0.5;
+  const sens=document.getElementById('lipSens').value/65;
+  const target=Math.min(1,Math.max(0,(signal-15)/70*sens));
+  const speed=target>A.mouthOpen?0.6:0.22;
+  A.mouthOpen+=(target-A.mouthOpen)*speed;
 
-  // Blink
+  // ── Blink ──
   const bi=+document.getElementById('blinkInt').value;
   A.blinkTimer+=dt;
   if(A.blinkState===0&&A.blinkTimer>=bi+Math.sin(A.t*0.4)*0.5){A.blinkState=1;A.blinkProg=0;A.blinkTimer=0;}
@@ -574,7 +964,7 @@ function update(dt){
   else if(A.blinkState===2){A.blinkProg+=dt*8;  if(A.blinkProg>=1){A.blinkState=0;A.blinkProg=0;}}
   A.eyeBlink=A.blinkState===1?A.blinkProg:A.blinkState===2?1-A.blinkProg:0;
 
-  // Head — small, natural range so only the head moves, not the whole body
+  // ── Head sway ──
   const hs=document.getElementById('headSway').value/100;
   A.headAngle=(Math.sin(A.t*.7)*.018+Math.sin(A.t*1.9)*.007)*hs;
   if(A.mouthOpen>0.15) A.headAngle+=Math.sin(A.t*4.2)*.007*hs;
@@ -613,46 +1003,38 @@ function drawFrame(){
   const {x:cdx,y:cdy}=charDrawPos();
   const cw=charObj.img.naturalWidth*charObj.scale;
   const ch=charObj.img.naturalHeight*charObj.scale;
-
   const faceW=Math.hypot(LM.eyeR.x-LM.eyeL.x,LM.eyeR.y-LM.eyeL.y);
   const eyeMidY=(LM.eyeL.y+LM.eyeR.y)/2;
   const faceH=LM.mouth.y-eyeMidY;
-  // Neck cut: just below the mouth
   const neckY=LM.mouth.y+faceH*0.75;
   const pivX=(LM.eyeL.x+LM.eyeR.x)/2;
   const pivY=eyeMidY;
 
-  // ── 1. BODY — static, no transform ──
+  // ── Body (static) ──
   ctx.save();
   ctx.beginPath(); ctx.rect(0,neckY,W,H-neckY); ctx.clip();
   ctx.drawImage(charObj.img,cdx,cdy,cw,ch);
   ctx.restore();
 
-  // ── 2. HEAD — only this region rotates ──
+  // ── Head (animated) ──
   ctx.save();
-  ctx.translate(pivX, pivY + A.headBobY);
-  ctx.rotate(A.headAngle);
-  ctx.translate(-pivX,-pivY);
-  // Clip to head region, overlapping neck slightly to hide the seam
+  ctx.translate(pivX,pivY+A.headBobY); ctx.rotate(A.headAngle); ctx.translate(-pivX,-pivY);
   ctx.beginPath();
-  ctx.rect(cdx-4, cdy-4, cw+8, neckY-cdy+faceH*0.28+4);
-  ctx.clip();
+  ctx.rect(cdx-4,cdy-4,cw+8,neckY-cdy+faceH*0.28+4); ctx.clip();
   ctx.drawImage(charObj.img,cdx,cdy,cw,ch);
 
-  // Eye blink overlays
   if(A.eyeBlink>0){
     const er=faceW*0.13*(document.getElementById('eyeSz').value/100);
     eyelid(ctx,LM.eyeL.x,LM.eyeL.y,er,A.eyeBlink);
     eyelid(ctx,LM.eyeR.x,LM.eyeR.y,er,A.eyeBlink);
   }
 
-  // Jaw-drop lip animation
   const lipSz       = document.getElementById('mouthSz').value/100;
-  const lipRot      = document.getElementById('lipRot').value * Math.PI/180;
+  const lipRot      = document.getElementById('lipRot').value*Math.PI/180;
   const lipWStretch = document.getElementById('lipW').value/100;
-  jawDrop(ctx, charObj.img, cdx, cdy, charObj.scale,
-          LM.mouth.x, LM.mouth.y, faceW, A.mouthOpen,
-          lipSz, lipRot, lipWStretch);
+  jawDrop(ctx,charObj.img,cdx,cdy,charObj.scale,
+    LM.mouth.x,LM.mouth.y,faceW,A.mouthOpen,
+    lipSz,lipRot,lipWStretch);
 
   ctx.restore();
   if(setupMode) drawMarkers();
@@ -675,117 +1057,63 @@ function eyelid(ctx,ex,ey,r,b){
   ctx.restore();
 }
 
-// ── Jaw-Drop Mouth Animation ──
-// Strategy:
-//  - The character image already has the upper lip drawn (from the head pass).
-//    We never touch it — no skin blob, no upper-jaw redraw.
-//  - We only modify THREE things each frame:
-//    1. Fill the jaw-gap (my → my+dropAmt) with skin colour + dark cavity
-//    2. Draw teeth/tongue inside the cavity
-//    3. Stamp the lower-jaw pixels (from the image) shifted DOWN by dropAmt
-// No outer ellipse clip, no individual jaw clips → no visible oval artefact.
-function jawDrop(ctx, img, cdx, cdy, scale, mx, my, fw, open, sz, rot, wStretch) {
-  sz = sz || 1; rot = rot || 0; wStretch = wStretch || 1;
-  if (!img) return;
-
-  // Setup mode: preview at 35% so user can confirm landmark placement
-  const drawOpen = setupMode ? Math.max(open, 0.35) : open;
-  if (drawOpen < 0.004) return;   // fully closed → leave original pixels untouched
-
-  // ── Dimensions in canvas-space pixels ──
-  const halfW   = fw * 0.46 * sz;   // half-width of the mouth patch
-  const lowerH  = fw * 0.30 * sz;   // height of lower-jaw strip (lip + chin)
-  const maxDrop = fw * 0.28 * sz;   // pixel distance for fully-open jaw
-  const dropAmt = drawOpen * maxDrop;
-
-  // ── Same region in IMAGE pixel space ──
-  const iMx = (mx - cdx) / scale;
-  const iMy = (my - cdy) / scale;
-  const iHW = halfW  / scale;
-  const iLH = lowerH / scale;
-  const iW  = img.naturalWidth, iH = img.naturalHeight;
-
-  const skin = document.getElementById('skinColor').value;
+// ── Jaw-Drop ──
+function jawDrop(ctx,img,cdx,cdy,scale,mx,my,fw,open,sz,rot,wStretch){
+  sz=sz||1; rot=rot||0; wStretch=wStretch||1;
+  if(!img) return;
+  const drawOpen=setupMode?Math.max(open,0.35):open;
+  if(drawOpen<0.004) return;
+  const halfW=fw*0.46*sz;
+  const lowerH=fw*0.30*sz;
+  const maxDrop=fw*0.28*sz;
+  const dropAmt=drawOpen*maxDrop;
+  const iMx=(mx-cdx)/scale, iMy=(my-cdy)/scale;
+  const iHW=halfW/scale, iLH=lowerH/scale;
+  const iW=img.naturalWidth, iH=img.naturalHeight;
+  const skin=document.getElementById('skinColor').value;
 
   ctx.save();
-  ctx.translate(mx, my); ctx.rotate(rot); ctx.scale(wStretch, 1); ctx.translate(-mx, -my);
+  ctx.translate(mx,my); ctx.rotate(rot); ctx.scale(wStretch,1); ctx.translate(-mx,-my);
 
-  // ─────────────────────────────────────────────────
-  //  STEP 1 — fill the jaw-drop gap with skin colour
-  //  (covers the original lower-lip pixels in the gap)
-  // ─────────────────────────────────────────────────
-  ctx.fillStyle = skin;
-  ctx.fillRect(mx - halfW, my, halfW * 2, dropAmt + 1);
+  ctx.fillStyle=skin;
+  ctx.fillRect(mx-halfW,my,halfW*2,dropAmt+1);
 
-  // ─────────────────────────────────────────────────
-  //  STEP 2 — dark mouth cavity (bezier shape)
-  // ─────────────────────────────────────────────────
-  function cavityPath() {
+  function cavityPath(){
     ctx.beginPath();
-    ctx.moveTo(mx - halfW * 0.88, my);
-    ctx.bezierCurveTo(mx - halfW * 0.50, my + dropAmt * 0.96,
-                      mx + halfW * 0.50, my + dropAmt * 0.96,
-                      mx + halfW * 0.88, my);
-    ctx.bezierCurveTo(mx + halfW * 0.50, my + dropAmt * 0.04,
-                      mx - halfW * 0.50, my + dropAmt * 0.04,
-                      mx - halfW * 0.88, my);
+    ctx.moveTo(mx-halfW*.88,my);
+    ctx.bezierCurveTo(mx-halfW*.50,my+dropAmt*.96,mx+halfW*.50,my+dropAmt*.96,mx+halfW*.88,my);
+    ctx.bezierCurveTo(mx+halfW*.50,my+dropAmt*.04,mx-halfW*.50,my+dropAmt*.04,mx-halfW*.88,my);
     ctx.closePath();
   }
   cavityPath();
-  ctx.fillStyle = '#0b0108'; ctx.fill();
+  ctx.fillStyle='#0b0108'; ctx.fill();
 
-  // ─────────────────────────────────────────────────
-  //  STEP 3 — teeth + tongue (clipped to cavity)
-  // ─────────────────────────────────────────────────
-  if (drawOpen > 0.13) {
-    ctx.save();
-    cavityPath(); ctx.clip();
-
-    // Upper teeth
-    ctx.fillStyle = '#f0ede8';
-    ctx.fillRect(mx - halfW * 0.84, my, halfW * 1.68, dropAmt * 0.44);
-    // Gum gradient
-    const gg = ctx.createLinearGradient(0, my, 0, my + dropAmt * 0.13);
-    gg.addColorStop(0, 'rgba(210,95,95,.45)'); gg.addColorStop(1, 'transparent');
-    ctx.fillStyle = gg;
-    ctx.fillRect(mx - halfW * 0.84, my, halfW * 1.68, dropAmt * 0.13);
-    // Tooth dividers
-    ctx.strokeStyle = 'rgba(170,165,155,.36)'; ctx.lineWidth = 0.9;
-    const tw = halfW * 1.68 / 7;
-    for (let i = 1; i < 7; i++) {
-      const tx = mx - halfW * 0.84 + i * tw;
-      ctx.beginPath(); ctx.moveTo(tx, my); ctx.lineTo(tx, my + dropAmt * 0.41); ctx.stroke();
-    }
-    // Lower teeth + tongue for wide-open
-    if (drawOpen > 0.48) {
-      ctx.fillStyle = '#ece9e4';
-      ctx.fillRect(mx - halfW * 0.68, my + dropAmt * 0.57, halfW * 1.36, dropAmt * 0.25);
-      ctx.beginPath();
-      ctx.ellipse(mx, my + dropAmt * 0.79, halfW * 0.30, dropAmt * 0.16, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#bf5060'; ctx.fill();
+  if(drawOpen>0.13){
+    ctx.save(); cavityPath(); ctx.clip();
+    ctx.fillStyle='#f0ede8';
+    ctx.fillRect(mx-halfW*.84,my,halfW*1.68,dropAmt*.44);
+    const gg=ctx.createLinearGradient(0,my,0,my+dropAmt*.13);
+    gg.addColorStop(0,'rgba(210,95,95,.45)'); gg.addColorStop(1,'transparent');
+    ctx.fillStyle=gg; ctx.fillRect(mx-halfW*.84,my,halfW*1.68,dropAmt*.13);
+    ctx.strokeStyle='rgba(170,165,155,.36)'; ctx.lineWidth=0.9;
+    const tw=halfW*1.68/7;
+    for(let i=1;i<7;i++){const tx2=mx-halfW*.84+i*tw; ctx.beginPath(); ctx.moveTo(tx2,my); ctx.lineTo(tx2,my+dropAmt*.41); ctx.stroke();}
+    if(drawOpen>0.48){
+      ctx.fillStyle='#ece9e4'; ctx.fillRect(mx-halfW*.68,my+dropAmt*.57,halfW*1.36,dropAmt*.25);
+      ctx.beginPath(); ctx.ellipse(mx,my+dropAmt*.79,halfW*.30,dropAmt*.16,0,0,Math.PI*2);
+      ctx.fillStyle='#bf5060'; ctx.fill();
     }
     ctx.restore();
   }
 
-  // ─────────────────────────────────────────────────
-  //  STEP 4 — lower jaw pixels shifted down
-  //  (stamps the character's own lower-lip pixels at
-  //   their new position; no clip needed)
-  // ─────────────────────────────────────────────────
-  const lx0 = Math.max(0, iMx - iHW);
-  const ly0 = Math.max(0, iMy);
-  const lx1 = Math.min(iW, iMx + iHW);
-  const ly1 = Math.min(iH, iMy + iLH);
-  if (lx1 > lx0 && ly1 > ly0) {
-    const dxOff = (lx0 - (iMx - iHW)) * scale;   // adjust if src was clamped
-    const dyOff = (ly0 - iMy)         * scale;
-    ctx.drawImage(img,
-      lx0, ly0, lx1 - lx0, ly1 - ly0,
-      mx - halfW + dxOff, my + dropAmt + dyOff,
-      (lx1 - lx0) * scale, (ly1 - ly0) * scale);
+  const lx0=Math.max(0,iMx-iHW), ly0=Math.max(0,iMy);
+  const lx1=Math.min(iW,iMx+iHW), ly1=Math.min(iH,iMy+iLH);
+  if(lx1>lx0&&ly1>ly0){
+    const dxOff=(lx0-(iMx-iHW))*scale, dyOff=(ly0-iMy)*scale;
+    ctx.drawImage(img,lx0,ly0,lx1-lx0,ly1-ly0,
+      mx-halfW+dxOff,my+dropAmt+dyOff,(lx1-lx0)*scale,(ly1-ly0)*scale);
   }
-
-  ctx.restore(); // pop rotation / h-stretch
+  ctx.restore();
 }
 
 // ── Speech Bubble ──
@@ -803,7 +1131,6 @@ function setBubbleSide(btn){
   redraw();
 }
 
-// Word-wrap helper (handles space-separated and character-by-character for dense scripts)
 function wrapText(ctx,text,maxW){
   const out=[];
   for(const para of text.split('\n')){
@@ -816,15 +1143,14 @@ function wrapText(ctx,text,maxW){
       else{
         if(line) out.push(line);
         if(ctx.measureText(word).width>maxW){
-          // char-by-char fallback (Kannada / long tokens)
           let c='';
-          for(const ch of [...word]){
+          for(const ch of[...word]){
             const t2=c+ch;
             if(ctx.measureText(t2).width<=maxW){c=t2;}
             else{if(c)out.push(c);c=ch;}
           }
           line=c;
-        } else {line=word;}
+        } else{line=word;}
       }
     }
     if(line)out.push(line);
@@ -834,20 +1160,28 @@ function wrapText(ctx,text,maxW){
 
 function drawBubble(){
   if(!bubble.visible) return;
-  const rawText=(document.getElementById('bubbleText')||{}).value||'';
-  if(!rawText.trim()) return;
+  const fullText=(document.getElementById('bubbleText')||{}).value||'';
+  if(!fullText.trim()) return;
 
-  const fontSize = +document.getElementById('bFont').value;
-  const bw       = +document.getElementById('bWid').value;
-  const r        = +document.getElementById('bRad').value;
-  const bgColor  = document.getElementById('bBg').value;
-  const textColor= document.getElementById('bFg').value;
-  const bdrColor = document.getElementById('bBdr').value;
-  const side     = bubble.arrowSide;
-  const ap       = +document.getElementById('bAp').value/100;
-  const al       = +document.getElementById('bAl').value;
-  const aw       = +document.getElementById('bAw').value;  // half-width of arrow base
-  const pad      = Math.max(10, fontSize*0.55);
+  // Apply typewriter: clip to current chars if playing
+  let rawText = fullText;
+  if(TW.enabled && A.isPlaying){
+    rawText = [...fullText].slice(0, Math.floor(TW.currentChars)).join('');
+    if(!rawText) return;
+  }
+
+  const fontSize   = +document.getElementById('bFont').value;
+  const bw         = +document.getElementById('bWid').value;
+  const r          = +document.getElementById('bRad').value;
+  const bgColor    = document.getElementById('bBg').value;
+  const textColor  = document.getElementById('bFg').value;
+  const bdrColor   = document.getElementById('bBdr').value;
+  const side       = bubble.arrowSide;
+  const ap         = +document.getElementById('bAp').value/100;
+  const al         = +document.getElementById('bAl').value;
+  const aw         = +document.getElementById('bAw').value;
+  const pad        = Math.max(10,fontSize*0.55);
+  const bStyle     = bubble.style||'classic';
 
   ctx.save();
   ctx.font=`${fontSize}px 'Noto Sans Kannada','Noto Sans','Segoe UI',sans-serif`;
@@ -855,64 +1189,245 @@ function drawBubble(){
   const lines = wrapText(ctx, rawText, bw-pad*2);
   const lineH  = fontSize*1.42;
   const bh     = lines.length*lineH + pad*2;
-  bubble.bh    = bh;   // cache for drag hit-test
+  bubble.bh    = bh;
 
-  const bx=Math.round(bubble.x), by=Math.round(bubble.y);
+  const bx = Math.round(bubble.x);
+  const by = Math.round(bubble.y);
+  const cx = bx+bw/2, cy = by+bh/2;
 
-  // ── Combined rounded-rect + tail path ──
-  function buildPath(){
-    // clamp arrow position so tail base stays on edge
-    const cpX = bx + Math.max(aw+r, Math.min(bw-aw-r, ap*bw));
-    const cpY = by + Math.max(aw+r, Math.min(bh-aw-r, ap*bh));
-    ctx.beginPath();
-    if(side==='bottom'){
-      ctx.moveTo(bx+r,by);
-      ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,   bx+bw,by+r,   r);
-      ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,bx+bw-r,by+bh,r);
-      ctx.lineTo(cpX+aw,by+bh);       ctx.lineTo(cpX,by+bh+al);  ctx.lineTo(cpX-aw,by+bh);
-      ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,   bx,by+bh-r,   r);
-      ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,      bx+r,by,       r);
-    } else if(side==='top'){
-      ctx.moveTo(bx+r,by);
-      ctx.lineTo(cpX-aw,by);          ctx.lineTo(cpX,by-al);     ctx.lineTo(cpX+aw,by);
-      ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,   bx+bw,by+r,   r);
-      ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,bx+bw-r,by+bh,r);
-      ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,   bx,by+bh-r,   r);
-      ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,      bx+r,by,       r);
-    } else if(side==='left'){
-      ctx.moveTo(bx+r,by);
-      ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,   bx+bw,by+r,   r);
-      ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,bx+bw-r,by+bh,r);
-      ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,   bx,by+bh-r,   r);
-      ctx.lineTo(bx,cpY+aw);          ctx.lineTo(bx-al,cpY); ctx.lineTo(bx,cpY-aw);
-      ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,      bx+r,by,       r);
-    } else {  // right
-      ctx.moveTo(bx+r,by);
-      ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,      bx+bw,by+r,      r);
-      ctx.lineTo(bx+bw,cpY-aw);       ctx.lineTo(bx+bw+al,cpY); ctx.lineTo(bx+bw,cpY+aw);
-      ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,  bx+bw-r,by+bh,   r);
-      ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,      bx,by+bh-r,      r);
-      ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,         bx+r,by,          r);
+  // ════════════════════════════
+  //  STYLE DISPATCH
+  // ════════════════════════════
+
+  if(bStyle==='thought'){
+    // ── THOUGHT BUBBLE (cloud + dot trail) ──
+    const rx=bw/2*0.88, ry=bh/2*0.88;
+    const numBumps=10;
+    const bumpR=Math.min(rx,ry)*0.24;
+
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.22)'; ctx.shadowBlur=14; ctx.shadowOffsetY=3;
+    // Draw bump circles + fill center
+    for(let i=0;i<numBumps;i++){
+      const ang=(i/numBumps)*Math.PI*2;
+      ctx.beginPath();
+      ctx.arc(cx+rx*Math.cos(ang), cy+ry*Math.sin(ang), bumpR, 0, Math.PI*2);
+      ctx.fillStyle=bgColor; ctx.fill();
+      ctx.strokeStyle=bdrColor; ctx.lineWidth=1.8; ctx.stroke();
     }
-    ctx.closePath();
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,rx*0.72,ry*0.72,0,0,Math.PI*2);
+    ctx.fillStyle=bgColor; ctx.fill();
+    ctx.restore();
+
+    // Dot trail
+    const tailBaseX = bx + ap*bw;
+    const tailBaseY = side==='bottom'?by+bh : by;
+    const dDir      = side==='bottom'?1:-1;
+    [1.0,0.65,0.4].forEach((f,i)=>{
+      const tx=tailBaseX+(i-1)*12;
+      const ty=tailBaseY+dDir*al*f;
+      ctx.beginPath();
+      ctx.arc(tx,ty,5*f,0,Math.PI*2);
+      ctx.fillStyle=bgColor; ctx.fill();
+      ctx.strokeStyle=bdrColor; ctx.lineWidth=1.5; ctx.stroke();
+    });
+
+    // Text clipped to inner ellipse
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,rx*0.72,ry*0.72,0,0,Math.PI*2); ctx.clip();
+    ctx.fillStyle=textColor; ctx.textAlign='left'; ctx.textBaseline='top';
+    const tStartX=cx-rx*0.58, tStartY=cy-ry*0.52;
+    lines.forEach((ln,i)=>ctx.fillText(ln, tStartX, tStartY+i*lineH));
+    ctx.restore();
+
+  } else if(bStyle==='burst'){
+    // ── BURST / SHOUT BUBBLE ──
+    const points=14;
+    const outerR=Math.max(bw,bh)*0.56;
+    const innerR=Math.min(bw,bh)*0.38;
+
+    function burstPath(){
+      ctx.beginPath();
+      for(let i=0;i<points*2;i++){
+        const rb=i%2===0?outerR:innerR;
+        const ang=(i/(points*2))*Math.PI*2-Math.PI/2;
+        if(i===0) ctx.moveTo(cx+rb*Math.cos(ang),cy+rb*Math.sin(ang));
+        else       ctx.lineTo(cx+rb*Math.cos(ang),cy+rb*Math.sin(ang));
+      }
+      ctx.closePath();
+    }
+
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=16; ctx.shadowOffsetY=4;
+    burstPath(); ctx.fillStyle=bgColor; ctx.fill();
+    ctx.restore();
+    burstPath(); ctx.strokeStyle=bdrColor; ctx.lineWidth=2.5; ctx.stroke();
+
+    // Text inside
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,innerR*0.95,0,Math.PI*2); ctx.clip();
+    ctx.fillStyle=textColor; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font=`bold ${fontSize}px 'Noto Sans Kannada','Noto Sans','Segoe UI',sans-serif`;
+    const totalH=(lines.length-1)*lineH;
+    lines.forEach((ln,i)=>ctx.fillText(ln,cx,cy-totalH/2+i*lineH));
+    ctx.restore();
+    bubble.bh=outerR*2; // adjust hit area
+
+  } else if(bStyle==='minimal'){
+    // ── MINIMAL (glassy backdrop) ──
+    ctx.save();
+    ctx.globalAlpha=0.82;
+    ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,r);
+    ctx.fillStyle=bgColor; ctx.fill();
+    ctx.globalAlpha=0.5;
+    ctx.strokeStyle=bdrColor; ctx.lineWidth=1;
+    ctx.stroke();
+    ctx.restore();
+    // Text
+    ctx.fillStyle=textColor; ctx.textAlign='left'; ctx.textBaseline='top';
+    lines.forEach((ln,i)=>ctx.fillText(ln,bx+pad,by+pad+i*lineH));
+
+  } else if(bStyle==='neon'){
+    // ── NEON GLOW ──
+    // Outer glow passes
+    for(let g=3;g>=0;g--){
+      ctx.save();
+      ctx.shadowColor=bdrColor; ctx.shadowBlur=8+g*10;
+      ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,r);
+      ctx.strokeStyle=bdrColor; ctx.lineWidth=1.5+g;
+      ctx.stroke();
+      ctx.restore();
+    }
+    // Fill (dark)
+    ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,r);
+    ctx.fillStyle='rgba(4,4,18,0.88)'; ctx.fill();
+    // Bright border
+    ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,r);
+    ctx.strokeStyle=bdrColor; ctx.lineWidth=2; ctx.stroke();
+    // Tail
+    ctx.save();
+    ctx.shadowColor=bdrColor; ctx.shadowBlur=12;
+    classicTail(bx,by,bw,bh,r,ap,al,aw,side);
+    ctx.fillStyle='rgba(4,4,18,0.88)'; ctx.fill();
+    ctx.strokeStyle=bdrColor; ctx.lineWidth=2; ctx.stroke();
+    ctx.restore();
+    // Text (glowing)
+    ctx.save();
+    ctx.shadowColor=textColor; ctx.shadowBlur=8;
+    ctx.fillStyle=textColor; ctx.textAlign='left'; ctx.textBaseline='top';
+    lines.forEach((ln,i)=>ctx.fillText(ln,bx+pad,by+pad+i*lineH));
+    ctx.restore();
+
+  } else if(bStyle==='comic'){
+    // ── COMIC BOOK ──
+    const comicR=Math.max(4,r*0.5);
+    ctx.save();
+    ctx.translate(cx,cy+bh/2); ctx.rotate(0.018); ctx.translate(-cx,-(cy+bh/2));
+    // Shadow
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=0; ctx.shadowOffsetX=5; ctx.shadowOffsetY=5;
+    ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,comicR);
+    ctx.fillStyle='#000'; ctx.fill();
+    ctx.restore();
+    // White fill
+    ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,comicR);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.strokeStyle='#000'; ctx.lineWidth=4.5; ctx.stroke();
+    // Tail
+    comicTail(bx,by,bw,bh,ap,al,aw,side);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.strokeStyle='#000'; ctx.lineWidth=4.5; ctx.stroke();
+    // Bold text
+    ctx.fillStyle='#111';
+    ctx.font=`bold ${fontSize}px 'Noto Sans Kannada','Noto Sans','Segoe UI',sans-serif`;
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    lines.forEach((ln,i)=>ctx.fillText(ln,bx+pad,by+pad+i*lineH));
+    ctx.restore();
+
+  } else {
+    // ── CLASSIC (default) ──
+    function buildPath(){
+      const cpX=bx+Math.max(aw+r,Math.min(bw-aw-r,ap*bw));
+      const cpY=by+Math.max(aw+r,Math.min(bh-aw-r,ap*bh));
+      ctx.beginPath();
+      if(side==='bottom'){
+        ctx.moveTo(bx+r,by);
+        ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,bx+bw,by+r,r);
+        ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,bx+bw-r,by+bh,r);
+        ctx.lineTo(cpX+aw,by+bh);       ctx.lineTo(cpX,by+bh+al); ctx.lineTo(cpX-aw,by+bh);
+        ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,bx,by+bh-r,r);
+        ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,bx+r,by,r);
+      } else if(side==='top'){
+        ctx.moveTo(bx+r,by);
+        ctx.lineTo(cpX-aw,by);          ctx.lineTo(cpX,by-al); ctx.lineTo(cpX+aw,by);
+        ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,bx+bw,by+r,r);
+        ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,bx+bw-r,by+bh,r);
+        ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,bx,by+bh-r,r);
+        ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,bx+r,by,r);
+      } else if(side==='left'){
+        ctx.moveTo(bx+r,by);
+        ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,bx+bw,by+r,r);
+        ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,bx+bw-r,by+bh,r);
+        ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,bx,by+bh-r,r);
+        ctx.lineTo(bx,cpY+aw);          ctx.lineTo(bx-al,cpY); ctx.lineTo(bx,cpY-aw);
+        ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,bx+r,by,r);
+      } else {
+        ctx.moveTo(bx+r,by);
+        ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,bx+bw,by+r,r);
+        ctx.lineTo(bx+bw,cpY-aw);       ctx.lineTo(bx+bw+al,cpY); ctx.lineTo(bx+bw,cpY+aw);
+        ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,bx+bw-r,by+bh,r);
+        ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,bx,by+bh-r,r);
+        ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,bx+r,by,r);
+      }
+      ctx.closePath();
+    }
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.28)'; ctx.shadowBlur=16; ctx.shadowOffsetY=4;
+    buildPath(); ctx.fillStyle=bgColor; ctx.fill();
+    ctx.restore();
+    buildPath(); ctx.fillStyle=bgColor; ctx.fill();
+    ctx.strokeStyle=bdrColor; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle=textColor; ctx.textAlign='left'; ctx.textBaseline='top';
+    lines.forEach((ln,i)=>ctx.fillText(ln,bx+pad,by+pad+i*lineH));
   }
 
-  // Shadow pass
-  ctx.save();
-  ctx.shadowColor='rgba(0,0,0,0.28)'; ctx.shadowBlur=16; ctx.shadowOffsetY=4;
-  buildPath(); ctx.fillStyle=bgColor; ctx.fill();
   ctx.restore();
+}
 
-  // Fill + border
-  buildPath();
-  ctx.fillStyle=bgColor; ctx.fill();
-  ctx.strokeStyle=bdrColor; ctx.lineWidth=2; ctx.stroke();
+// Comic tail helper (simple triangle)
+function comicTail(bx,by,bw,bh,ap,al,aw,side){
+  const cpX=bx+Math.max(aw+4,Math.min(bw-aw-4,ap*bw));
+  const cpY=by+Math.max(aw+4,Math.min(bh-aw-4,ap*bh));
+  ctx.beginPath();
+  if(side==='bottom'){
+    ctx.moveTo(cpX-aw,by+bh); ctx.lineTo(cpX,by+bh+al); ctx.lineTo(cpX+aw,by+bh);
+  } else if(side==='top'){
+    ctx.moveTo(cpX-aw,by); ctx.lineTo(cpX,by-al); ctx.lineTo(cpX+aw,by);
+  } else if(side==='left'){
+    ctx.moveTo(bx,cpY-aw); ctx.lineTo(bx-al,cpY); ctx.lineTo(bx,cpY+aw);
+  } else {
+    ctx.moveTo(bx+bw,cpY-aw); ctx.lineTo(bx+bw+al,cpY); ctx.lineTo(bx+bw,cpY+aw);
+  }
+  ctx.closePath();
+}
 
-  // Text
-  ctx.fillStyle=textColor;
-  ctx.textAlign='left'; ctx.textBaseline='top';
-  lines.forEach((ln,i)=>ctx.fillText(ln, bx+pad, by+pad+i*lineH));
-  ctx.restore();
+// Neon tail helper
+function classicTail(bx,by,bw,bh,r,ap,al,aw,side){
+  const cpX=bx+Math.max(aw+r,Math.min(bw-aw-r,ap*bw));
+  const cpY=by+Math.max(aw+r,Math.min(bh-aw-r,ap*bh));
+  ctx.beginPath();
+  if(side==='bottom'){
+    ctx.moveTo(cpX-aw,by+bh); ctx.lineTo(cpX,by+bh+al); ctx.lineTo(cpX+aw,by+bh);
+  } else if(side==='top'){
+    ctx.moveTo(cpX-aw,by); ctx.lineTo(cpX,by-al); ctx.lineTo(cpX+aw,by);
+  } else if(side==='left'){
+    ctx.moveTo(bx,cpY-aw); ctx.lineTo(bx-al,cpY); ctx.lineTo(bx,cpY+aw);
+  } else {
+    ctx.moveTo(bx+bw,cpY-aw); ctx.lineTo(bx+bw+al,cpY); ctx.lineTo(bx+bw,cpY+aw);
+  }
+  ctx.closePath();
 }
 
 // ── Markers ──
@@ -943,10 +1458,7 @@ function cPos(e){
 canvas.addEventListener('mousedown',e=>{
   if(A.isPlaying) return;
   const p=cPos(e);
-  // Bubble drag (works even when setup is locked)
-  if(bubble.visible &&
-     p.x>=bubble.x && p.x<=bubble.x+( +document.getElementById('bWid').value) &&
-     p.y>=bubble.y && p.y<=bubble.y+bubble.bh){
+  if(bubble.visible&&p.x>=bubble.x&&p.x<=bubble.x+(+document.getElementById('bWid').value)&&p.y>=bubble.y&&p.y<=bubble.y+bubble.bh){
     dragging='bubble'; dragOff={x:p.x-bubble.x,y:p.y-bubble.y}; return;
   }
   if(!setupMode) return;
@@ -1002,6 +1514,11 @@ function shade(hex,d){
   let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
   return`rgb(${Math.max(0,Math.min(255,r+d))},${Math.max(0,Math.min(255,g+d))},${Math.max(0,Math.min(255,b+d))})`;
 }
+function fmtTime(s){
+  const m=Math.floor(s/60);
+  const sec=(s%60).toFixed(1).padStart(4,'0');
+  return `${m}:${sec}`;
+}
 function setStatus(s,m){
   document.getElementById('smsg').textContent=m;
   document.getElementById('sdot').className='sdot '+(s==='rec'?'rec':s==='play'?'play':s==='ready'?'ready':'');
@@ -1009,9 +1526,9 @@ function setStatus(s,m){
 document.addEventListener('click',()=>{if(A.audioCtx&&A.audioCtx.state==='suspended')A.audioCtx.resume();},{once:true});
 
 // ═══════════════════════════════
-//  DRAG & DROP (onto the uprow zones)
+//  DRAG & DROP
 // ═══════════════════════════════
-function setupDrop(rowId, handler){
+function setupDrop(rowId,handler){
   const el=document.getElementById(rowId);
   el.addEventListener('dragover',e=>{e.preventDefault();el.style.borderColor='#a78bfa';});
   el.addEventListener('dragleave',()=>el.style.borderColor='');
@@ -1024,7 +1541,6 @@ setupDrop('bgRow',    loadBg);
 setupDrop('charRow',  loadChar);
 setupDrop('audioRow', loadAudio);
 
-// Also allow dropping anywhere on the canvas (auto-detects image vs audio)
 canvas.addEventListener('dragover',e=>e.preventDefault());
 canvas.addEventListener('drop',e=>{
   e.preventDefault();
