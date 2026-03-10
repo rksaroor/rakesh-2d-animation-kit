@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aroor Rakesh's 2D Animation Kit</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:#0c0c18;color:#e0e0f0;font-family:'Segoe UI',system-ui,sans-serif;}
+.app{display:flex;height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:285px;min-width:285px;background:#14142a;border-right:1px solid #252545;display:flex;flex-direction:column;overflow:hidden;}
+.sidebar-head{padding:13px 16px;border-bottom:1px solid #252545;background:#0e0e22;flex-shrink:0;}
+.sidebar-head h1{font-size:15px;font-weight:700;color:#c4b5fd;}
+.sidebar-head p{font-size:11px;color:#5050a0;margin-top:1px;}
+.sidebar-body{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:9px;}
+.sidebar-body::-webkit-scrollbar{width:3px;}
+.sidebar-body::-webkit-scrollbar-thumb{background:#333360;border-radius:2px;}
+
+.card{background:#0e0e22;border:1px solid #252545;border-radius:9px;padding:11px;}
+.ctitle{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:#6060a0;margin-bottom:9px;display:flex;align-items:center;gap:5px;}
+.ctitle em{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;background:#252545;border-radius:50%;font-size:9px;font-style:normal;color:#c4b5fd;}
+
+/* ── Upload rows ── */
+.uprow{display:flex;align-items:center;gap:8px;background:#181830;border:1px solid #333360;border-radius:7px;padding:7px 10px;}
+.uprow .up-icon{font-size:17px;flex-shrink:0;}
+.uprow .up-text{flex:1;min-width:0;}
+.uprow .up-text .up-name{font-size:11px;color:#c4b5fd;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.uprow .up-text .up-hint{font-size:10px;color:#5050a0;}
+.uprow .up-btn{flex-shrink:0;background:#8b5cf6;color:#fff;border:none;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:background .15s;}
+.uprow .up-btn:hover{background:#7c3aed;}
+.uprow.done{border-color:#22c55e;background:#0a1a12;}
+.uprow.done .up-name{color:#4ade80;}
+
+/* Sliders */
+.sl-row{margin-bottom:7px;}
+.sl-row:last-child{margin-bottom:0;}
+.sl-hd{display:flex;justify-content:space-between;font-size:11px;color:#7070a0;margin-bottom:3px;}
+.sl-val{color:#a78bfa;font-weight:600;}
+input[type=range]{width:100%;-webkit-appearance:none;height:3px;border-radius:2px;background:#252545;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#8b5cf6;cursor:pointer;}
+
+/* Ratio grid */
+.ratio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+.rbtn{background:#181830;border:1px solid #333360;border-radius:6px;padding:5px 3px;cursor:pointer;text-align:center;color:#7070a0;font-size:10px;font-weight:600;transition:all .15s;line-height:1.4;}
+.rbtn:hover{border-color:#8b5cf6;color:#c4b5fd;}
+.rbtn.on{border-color:#8b5cf6;background:#1e1040;color:#c4b5fd;}
+.rbtn small{display:block;font-size:9px;opacity:.55;}
+
+/* Color + buttons */
+.color-row{display:flex;align-items:center;gap:8px;}
+.color-row label{font-size:11px;color:#7070a0;flex:1;}
+input[type=color]{width:34px;height:27px;border:1px solid #333360;border-radius:5px;cursor:pointer;padding:2px;background:#181830;}
+
+.btn{width:100%;padding:9px;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;margin-bottom:6px;}
+.btn:last-child{margin-bottom:0;}
+.btn-p{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;}
+.btn-p:hover{filter:brightness(1.1);}
+.btn-g{background:linear-gradient(135deg,#059669,#34d399);color:#fff;}
+.btn-r{background:linear-gradient(135deg,#dc2626,#f87171);color:#fff;}
+.btn-o{background:transparent;color:#a78bfa;border:1px solid #a78bfa;font-size:11px;padding:6px;}
+.btn-o:hover{background:#a78bfa1a;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.row2{display:flex;gap:6px;}
+.row2 .btn{margin-bottom:0;}
+
+/* Landmark tip */
+.lm-tip{background:#181830;border:1px solid #252545;border-radius:6px;padding:7px 9px;font-size:11px;color:#7070a0;line-height:1.55;}
+.dot8{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px;vertical-align:middle;}
+
+/* Speech bubble textarea */
+.bubble-ta{width:100%;background:#181830;border:1px solid #333360;border-radius:7px;padding:8px;
+  color:#e0e0f0;font-size:13px;resize:vertical;min-height:58px;line-height:1.5;
+  font-family:'Noto Sans Kannada','Noto Sans','Segoe UI',sans-serif;margin-top:4px;}
+.bubble-ta:focus{outline:none;border-color:#8b5cf6;}
+/* Arrow-side grid */
+.aside-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px;}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px;background:radial-gradient(ellipse at center,#141428,#07070e);overflow:hidden;}
+#canvas{border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px rgba(139,92,246,.12);}
+.sbar{display:flex;align-items:center;gap:8px;background:#14142a;border:1px solid #252545;border-radius:7px;padding:6px 14px;font-size:12px;color:#7070a0;width:100%;max-width:960px;}
+.sdot{width:7px;height:7px;border-radius:50%;background:#333360;flex-shrink:0;}
+.sdot.ready{background:#22c55e;}
+.sdot.play{background:#3b82f6;animation:pd .8s infinite;}
+.sdot.rec{background:#ef4444;animation:pd .6s infinite;}
+@keyframes pd{0%,100%{opacity:1}50%{opacity:.2}}
+</style>
+</head>
+<body>
+
+<!-- File inputs — visible, at page root, no JS wrapping -->
+<input type="file" id="bgFile"    accept="image/*"  onchange="loadBg(this)"    style="position:fixed;left:-9999px;top:0">
+<input type="file" id="charFile"  accept="image/*"  onchange="loadChar(this)"  style="position:fixed;left:-9999px;top:20px">
+<input type="file" id="audioFile" accept="audio/*"  onchange="loadAudio(this)" style="position:fixed;left:-9999px;top:40px">
+
+<div class="app">
+
+<!-- ══════ SIDEBAR ══════ -->
+<div class="sidebar">
+  <div class="sidebar-head">
+    <h1>🎬 Aroor Rakesh's 2D Animation Kit</h1>
+    <p>Upload · Align · Animate · Export</p>
+  </div>
+  <div class="sidebar-body">
+
+    <!-- 1. ASPECT RATIO -->
+    <div class="card">
+      <div class="ctitle"><em>1</em> Aspect Ratio</div>
+      <div class="ratio-grid">
+        <button class="rbtn on"  data-r="16:9"  onclick="setRatio(this)">▬ 16:9<small>YouTube</small></button>
+        <button class="rbtn"     data-r="9:16"  onclick="setRatio(this)">▮ 9:16<small>TikTok</small></button>
+        <button class="rbtn"     data-r="1:1"   onclick="setRatio(this)">■ 1:1<small>Instagram</small></button>
+        <button class="rbtn"     data-r="4:3"   onclick="setRatio(this)">▬ 4:3<small>Classic</small></button>
+        <button class="rbtn"     data-r="4:5"   onclick="setRatio(this)">▮ 4:5<small>IG Portrait</small></button>
+        <button class="rbtn"     data-r="21:9"  onclick="setRatio(this)">▬ 21:9<small>Cinema</small></button>
+      </div>
+    </div>
+
+    <!-- 2. BACKGROUND -->
+    <div class="card">
+      <div class="ctitle"><em>2</em> Background</div>
+      <div class="uprow" id="bgRow">
+        <span class="up-icon">🖼️</span>
+        <div class="up-text">
+          <div class="up-name" id="bgName">No file chosen</div>
+          <div class="up-hint">JPG · PNG · WebP</div>
+        </div>
+        <label class="up-btn" for="bgFile">Choose</label>
+      </div>
+    </div>
+
+    <!-- 3. CHARACTER -->
+    <div class="card">
+      <div class="ctitle"><em>3</em> Character</div>
+      <div class="uprow" id="charRow">
+        <span class="up-icon">🧑</span>
+        <div class="up-text">
+          <div class="up-name" id="charName">No file chosen</div>
+          <div class="up-hint">PNG transparency recommended</div>
+        </div>
+        <label class="up-btn" for="charFile">Choose</label>
+      </div>
+      <div style="margin-top:9px">
+        <div class="sl-row">
+          <div class="sl-hd"><span>Scale</span><span class="sl-val" id="charScaleVal">100%</span></div>
+          <input type="range" id="charScaleSlider" min="10" max="200" value="100"
+            oninput="charObj.scale=this.value/100;document.getElementById('charScaleVal').textContent=this.value+'%';redraw()">
+        </div>
+        <div class="sl-row">
+          <div class="sl-hd"><span>Vertical offset</span><span class="sl-val" id="charYVal">0</span></div>
+          <input type="range" id="charYSlider" min="-400" max="400" value="0"
+            oninput="charObj.offsetY=+this.value;document.getElementById('charYVal').textContent=this.value;redraw()">
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. FACE LANDMARKS -->
+    <div class="card">
+      <div class="ctitle"><em>4</em> Face Landmarks</div>
+      <div class="lm-tip">
+        <span class="dot8" style="background:#60a5fa"></span><b>Blue</b> = eyes &nbsp;
+        <span class="dot8" style="background:#f472b6"></span><b>Pink</b> = mouth<br>
+        Drag the dots on the canvas to align with your character's face
+      </div>
+      <div class="row2" style="margin-top:8px">
+        <button class="btn btn-o" onclick="resetLandmarks()">↺ Reset</button>
+        <button class="btn btn-o" id="lockBtn" onclick="toggleSetup()">🔒 Lock</button>
+      </div>
+      <div style="margin-top:8px" class="color-row">
+        <label>Skin / jaw colour:</label>
+        <input type="color" id="skinColor" value="#F5C6A0" oninput="redraw()">
+        <button class="btn btn-o" onclick="autoSkin()" style="width:auto;padding:4px 8px;font-size:10px">Auto</button>
+      </div>
+    </div>
+
+    <!-- 5. AUDIO -->
+    <div class="card">
+      <div class="ctitle"><em>5</em> Audio</div>
+      <div class="uprow" id="audioRow">
+        <span class="up-icon">🎵</span>
+        <div class="up-text">
+          <div class="up-name" id="audioName">No file chosen</div>
+          <div class="up-hint">MP3 · WAV · OGG</div>
+        </div>
+        <label class="up-btn" for="audioFile">Choose</label>
+      </div>
+    </div>
+
+    <!-- 6. ANIMATION -->
+    <div class="card">
+      <div class="ctitle"><em>6</em> Animation</div>
+      <div class="sl-row">
+        <div class="sl-hd"><span>Lip Sensitivity</span><span class="sl-val" id="lipVal">65%</span></div>
+        <input type="range" id="lipSens" min="5" max="150" value="65"
+          oninput="document.getElementById('lipVal').textContent=this.value+'%'">
+      </div>
+      <div class="sl-row">
+        <div class="sl-hd"><span>Blink Interval</span><span class="sl-val" id="blinkVal">3.0s</span></div>
+        <input type="range" id="blinkInt" min="1" max="10" step="0.5" value="3"
+          oninput="document.getElementById('blinkVal').textContent=(+this.value).toFixed(1)+'s'">
+      </div>
+      <div class="sl-row">
+        <div class="sl-hd"><span>Head Sway</span><span class="sl-val" id="swayVal">60%</span></div>
+        <input type="range" id="headSway" min="0" max="100" value="60"
+          oninput="document.getElementById('swayVal').textContent=this.value+'%'">
+      </div>
+      <div class="sl-row">
+        <div class="sl-hd"><span>Lip Scale</span><span class="sl-val" id="mouthSzVal">100%</span></div>
+        <input type="range" id="mouthSz" min="20" max="220" value="100"
+          oninput="document.getElementById('mouthSzVal').textContent=this.value+'%';redraw()">
+      </div>
+      <div class="sl-row">
+        <div class="sl-hd"><span>Lip Rotation</span><span class="sl-val" id="lipRotVal">0°</span></div>
+        <input type="range" id="lipRot" min="-45" max="45" value="0"
+          oninput="document.getElementById('lipRotVal').textContent=this.value+'°';redraw()">
+      </div>
+      <div class="sl-row">
+        <div class="sl-hd"><span>Lip H-Stretch</span><span class="sl-val" id="lipWVal">100%</span></div>
+        <input type="range" id="lipW" min="40" max="200" value="100"
+          oninput="document.getElementById('lipWVal').textContent=this.value+'%';redraw()">
+      </div>
+      <div class="sl-row">
+        <div class="sl-hd"><span>Eye Size</span><span class="sl-val" id="eyeSzVal">100%</span></div>
+        <input type="range" id="eyeSz" min="40" max="200" value="100"
+          oninput="document.getElementById('eyeSzVal').textContent=this.value+'%';redraw()">
+      </div>
+    </div>
+
+    <!-- 7. SPEECH BUBBLE -->
+    <div class="card">
+      <div class="ctitle"><em>7</em> Speech Bubble</div>
+      <button id="bubbleToggle" class="btn btn-o" onclick="toggleBubble()" style="margin-bottom:9px">💬 Enable Bubble</button>
+
+      <div class="sl-row">
+        <div class="sl-hd"><span>Text <span style="color:#a78bfa">(ಕನ್ನಡ / any language)</span></span></div>
+        <textarea id="bubbleText" class="bubble-ta" placeholder="Type here… ಇಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ" oninput="redraw()">ಹಲೋ!</textarea>
+      </div>
+
+      <div class="sl-row">
+        <div class="sl-hd"><span>Font Size</span><span class="sl-val" id="bFontVal">32px</span></div>
+        <input type="range" id="bFont" min="10" max="80" value="32"
+          oninput="document.getElementById('bFontVal').textContent=this.value+'px';redraw()">
+      </div>
+      <div class="sl-row">
+        <div class="sl-hd"><span>Bubble Width</span><span class="sl-val" id="bWidVal">280</span></div>
+        <input type="range" id="bWid" min="80" max="700" value="280"
+          oninput="document.getElementById('bWidVal').textContent=this.value;redraw()">
+      </div>
+      <div class="sl-row">
+        <div class="sl-hd"><span>Corner Radius</span><span class="sl-val" id="bRadVal">16</span></div>
+        <input type="range" id="bRad" min="0" max="50" value="16"
+          oninput="document.getElementById('bRadVal').textContent=this.value;redraw()">
+      </div>
+
+      <div class="color-row" style="margin:6px 0">
+        <label>Fill:</label>
+        <input type="color" id="bBg"  value="#ffffff" oninput="redraw()">
+        <label style="margin-left:6px">Text:</label>
+        <input type="color" id="bFg"  value="#111111" oninput="redraw()">
+        <label style="margin-left:6px">Border:</label>
+        <input type="color" id="bBdr" value="#444444" oninput="redraw()">
+      </div>
+
+      <div class="sl-hd" style="margin-bottom:4px"><span>Arrow Direction</span></div>
+      <div class="aside-grid">
+        <button class="rbtn" data-side="top"    onclick="setBubbleSide(this)">⬆ Top</button>
+        <button class="rbtn on" data-side="bottom" onclick="setBubbleSide(this)">⬇ Bottom</button>
+        <button class="rbtn" data-side="left"   onclick="setBubbleSide(this)">⬅ Left</button>
+        <button class="rbtn" data-side="right"  onclick="setBubbleSide(this)">➡ Right</button>
+      </div>
+
+      <div class="sl-row" style="margin-top:7px">
+        <div class="sl-hd"><span>Arrow Position</span><span class="sl-val" id="bApVal">30%</span></div>
+        <input type="range" id="bAp" min="5" max="95" value="30"
+          oninput="document.getElementById('bApVal').textContent=this.value+'%';redraw()">
+      </div>
+      <div class="sl-row">
+        <div class="sl-hd"><span>Arrow Size</span><span class="sl-val" id="bAlVal">32px</span></div>
+        <input type="range" id="bAl" min="0" max="90" value="32"
+          oninput="document.getElementById('bAlVal').textContent=this.value+'px';redraw()">
+      </div>
+      <div class="sl-row">
+        <div class="sl-hd"><span>Arrow Width</span><span class="sl-val" id="bAwVal">14px</span></div>
+        <input type="range" id="bAw" min="4" max="50" value="14"
+          oninput="document.getElementById('bAwVal').textContent=this.value+'px';redraw()">
+      </div>
+
+      <div class="lm-tip" style="margin-top:6px">
+        🖱 Drag the bubble on canvas to reposition it
+      </div>
+    </div>
+
+    <!-- 8. EXPORT -->
+    <div class="card">
+      <div class="ctitle"><em>8</em> Export</div>
+      <button class="btn btn-p" id="previewBtn" onclick="togglePreview()">▶ Preview</button>
+      <button class="btn btn-g" id="recordBtn"  onclick="startRecord()" disabled>⏺ Record Video</button>
+      <button class="btn btn-r" id="stopBtn"    onclick="stopRecord()" style="display:none">⏹ Stop &amp; Download</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════ MAIN ══════ -->
+<div class="main">
+  <canvas id="canvas" width="1280" height="720"></canvas>
+  <div class="sbar">
+    <div class="sdot" id="sdot"></div>
+    <span id="smsg">Upload background, character and audio to begin</span>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════
+//  GLOBALS
+// ═══════════════════════════════
+const RATIOS = {'16:9':{w:1280,h:720},'9:16':{w:720,h:1280},'1:1':{w:720,h:720},'4:3':{w:960,h:720},'4:5':{w:720,h:900},'21:9':{w:1280,h:549}};
+let curRatio = '16:9';
+
+const bgImg  = {img:null};
+const charObj= {img:null, scale:1, offsetX:0, offsetY:0};
+
+// Speech bubble state
+const bubble = { visible:false, x:80, y:55, bh:80, arrowSide:'bottom' };
+
+
+const LM = {
+  eyeL : {x:0,y:0,col:'#60a5fa',lbl:'L Eye'},
+  eyeR : {x:0,y:0,col:'#60a5fa',lbl:'R Eye'},
+  mouth: {x:0,y:0,col:'#f472b6',lbl:'Mouth'},
+};
+let setupMode=true, dragging=null, dragOff={x:0,y:0};
+
+const A={
+  t:0,lastTs:0,isPlaying:false,isRecording:false,
+  mouthOpen:0, eyeBlink:0,
+  blinkState:0,blinkProg:0,blinkTimer:0,
+  headAngle:0, headBobY:0,
+  audioCtx:null,analyser:null,audioEl:null,audioSrc:null,
+};
+let animId=null, mediaRecorder=null, recChunks=[];
+
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+
+// roundRect polyfill
+if(!ctx.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    r=typeof r==='number'?[r,r,r,r]:r||[0,0,0,0];
+    this.moveTo(x+r[0],y);
+    this.lineTo(x+w-r[1],y); this.quadraticCurveTo(x+w,y,x+w,y+r[1]);
+    this.lineTo(x+w,y+h-r[2]); this.quadraticCurveTo(x+w,y+h,x+w-r[2],y+h);
+    this.lineTo(x+r[3],y+h); this.quadraticCurveTo(x,y+h,x,y+h-r[3]);
+    this.lineTo(x,y+r[0]); this.quadraticCurveTo(x,y,x+r[0],y);
+    return this;
+  };
+}
+
+// ═══════════════════════════════
+//  ASPECT RATIO
+// ═══════════════════════════════
+function setRatio(btn){
+  document.querySelectorAll('.rbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  curRatio=btn.dataset.r;
+  const {w,h}=RATIOS[curRatio];
+  canvas.width=w; canvas.height=h;
+  if(charObj.img){
+    charObj.scale=(h*0.78)/charObj.img.naturalHeight;
+    document.getElementById('charScaleSlider').value=Math.round(charObj.scale*100);
+    document.getElementById('charScaleVal').textContent=Math.round(charObj.scale*100)+'%';
+  }
+  resetLandmarks();
+  sizeCanvas(); redraw();
+}
+
+function sizeCanvas(){
+  const mw=window.innerWidth-300, mh=window.innerHeight-58;
+  const ar=canvas.width/canvas.height;
+  let dw=mw, dh=mw/ar;
+  if(dh>mh){dh=mh; dw=mh*ar;}
+  canvas.style.width=dw+'px'; canvas.style.height=dh+'px';
+}
+window.addEventListener('resize',sizeCanvas);
+sizeCanvas();
+
+// ═══════════════════════════════
+//  FILE LOADING
+// ═══════════════════════════════
+function loadBg(inp){
+  if(!inp.files.length) return;
+  const f=inp.files[0];
+  const img=new Image();
+  img.onload=()=>{bgImg.img=img; redraw(); markDone('bgRow','bgName',f.name,'🖼️');};
+  img.src=URL.createObjectURL(f);
+}
+
+function loadChar(inp){
+  if(!inp.files.length) return;
+  const f=inp.files[0];
+  const img=new Image();
+  img.onload=()=>{
+    charObj.img=img;
+    charObj.scale=(canvas.height*0.78)/img.naturalHeight;
+    charObj.offsetX=0; charObj.offsetY=0;
+    document.getElementById('charScaleSlider').value=Math.round(charObj.scale*100);
+    document.getElementById('charScaleVal').textContent=Math.round(charObj.scale*100)+'%';
+    document.getElementById('charYSlider').value=0;
+    document.getElementById('charYVal').textContent='0';
+    resetLandmarks();
+    redraw();
+    markDone('charRow','charName',f.name,'🧑');
+  };
+  img.src=URL.createObjectURL(f);
+}
+
+function loadAudio(inp){
+  if(!inp.files.length) return;
+  const f=inp.files[0];
+  if(A.audioEl){A.audioEl.pause();A.audioEl.src='';}
+  if(A.audioCtx) A.audioCtx.close();
+  A.audioEl=new Audio();
+  A.audioEl.src=URL.createObjectURL(f);
+  A.audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  A.analyser=A.audioCtx.createAnalyser();
+  A.analyser.fftSize=512;
+  A.analyser.smoothingTimeConstant=0.78;
+  A.audioSrc=A.audioCtx.createMediaElementSource(A.audioEl);
+  A.audioSrc.connect(A.analyser);
+  A.analyser.connect(A.audioCtx.destination);
+  A.audioEl.onended=()=>{ if(A.isRecording) stopRecord(); else stopPreview(); };
+  document.getElementById('recordBtn').disabled=false;
+  markDone('audioRow','audioName',f.name,'🎵');
+  setStatus('ready','Audio ready — press ▶ Preview or ⏺ Record');
+}
+
+
+function markDone(rowId,nameId,fname,icon){
+  document.getElementById(rowId).classList.add('done');
+  document.getElementById(nameId).textContent=fname.length>22?fname.slice(0,20)+'…':fname;
+}
+
+// ═══════════════════════════════
+//  LANDMARKS
+// ═══════════════════════════════
+function resetLandmarks(){
+  const W=canvas.width, H=canvas.height;
+  const cx=W/2, cy=H*0.30, g=W*0.07;
+  LM.eyeL.x=cx-g;  LM.eyeL.y=cy;
+  LM.eyeR.x=cx+g;  LM.eyeR.y=cy;
+  LM.mouth.x=cx;    LM.mouth.y=cy+g*1.0;
+  redraw();
+}
+function toggleSetup(){
+  setupMode=!setupMode;
+  document.getElementById('lockBtn').textContent=setupMode?'🔒 Lock':'✏️ Edit';
+  redraw();
+}
+function autoSkin(){
+  if(!charObj.img) return;
+  const {x,y}=charDrawPos();
+  const ix=Math.round((LM.eyeL.x-x)/charObj.scale);
+  const iy=Math.max(0,Math.round((LM.eyeL.y-y)/charObj.scale-28));
+  const tc=Object.assign(document.createElement('canvas'),{width:charObj.img.naturalWidth,height:charObj.img.naturalHeight});
+  const tx=tc.getContext('2d'); tx.drawImage(charObj.img,0,0);
+  const px=tx.getImageData(Math.max(0,ix),iy,1,1).data;
+  if(px[3]>10){
+    document.getElementById('skinColor').value='#'+[px[0],px[1],px[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+    redraw();
+  }
+}
+
+// ═══════════════════════════════
+//  PREVIEW / RECORD
+// ═══════════════════════════════
+function togglePreview(){
+  if(A.isPlaying&&!A.isRecording){stopPreview();return;}
+  if(!A.audioEl){setStatus('','⚠ Upload audio first');return;}
+  beginPlay(false);
+  document.getElementById('previewBtn').textContent='⏸ Stop';
+}
+function stopPreview(){
+  A.isPlaying=false;
+  if(A.audioEl) A.audioEl.pause();
+  if(animId) cancelAnimationFrame(animId);
+  document.getElementById('previewBtn').textContent='▶ Preview';
+  setStatus('ready','Stopped'); redraw();
+}
+function startRecord(){
+  if(!A.audioEl){setStatus('','⚠ Upload audio first');return;}
+  if(A.isPlaying) stopPreview();
+  recChunks=[];
+  const vs=canvas.captureStream(30);
+  const ad=A.audioCtx.createMediaStreamDestination();
+  A.analyser.connect(ad);
+  const cs=new MediaStream([...vs.getVideoTracks(),...ad.stream.getAudioTracks()]);
+  const mime=MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')?'video/webm;codecs=vp9,opus':'video/webm';
+  mediaRecorder=new MediaRecorder(cs,{mimeType:mime});
+  mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recChunks.push(e.data);};
+  mediaRecorder.onstop=exportVid;
+  mediaRecorder.start(100);
+  A.isRecording=true;
+  document.getElementById('recordBtn').style.display='none';
+  document.getElementById('stopBtn').style.display='block';
+  document.getElementById('previewBtn').disabled=true;
+  beginPlay(true);
+}
+function stopRecord(){
+  A.isPlaying=false; A.isRecording=false;
+  if(A.audioEl) A.audioEl.pause();
+  if(animId) cancelAnimationFrame(animId);
+  if(mediaRecorder&&mediaRecorder.state!=='inactive') mediaRecorder.stop();
+  document.getElementById('recordBtn').style.display='block';
+  document.getElementById('stopBtn').style.display='none';
+  document.getElementById('previewBtn').disabled=false;
+  document.getElementById('previewBtn').textContent='▶ Preview';
+  setStatus('ready','Processing…'); redraw();
+}
+function exportVid(){
+  const blob=new Blob(recChunks,{type:'video/webm'});
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'animation_'+Date.now()+'.webm'});
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setStatus('ready','✅ Video downloaded!');
+}
+function beginPlay(rec){
+  if(A.audioCtx.state==='suspended') A.audioCtx.resume();
+  setupMode=false;
+  document.getElementById('lockBtn').textContent='✏️ Edit';
+  A.isPlaying=true; A.t=0; A.blinkTimer=0;
+  A.audioEl.currentTime=0; A.audioEl.play();
+  A.lastTs=performance.now();
+  setStatus(rec?'rec':'play', rec?'⏺ Recording…':'▶ Playing…');
+  loop(A.lastTs);
+}
+
+// ═══════════════════════════════
+//  ANIMATION LOOP
+// ═══════════════════════════════
+function loop(ts){
+  if(!A.isPlaying) return;
+  const dt=Math.min((ts-A.lastTs)/1000,0.05);
+  A.lastTs=ts; A.t+=dt;
+  update(dt); drawFrame();
+  animId=requestAnimationFrame(loop);
+}
+function update(dt){
+  // Lip sync — focus on vocal formant range ~200Hz–3kHz
+  const freq=new Uint8Array(A.analyser.frequencyBinCount);
+  A.analyser.getByteFrequencyData(freq);
+  // bins ~3% to 35% of spectrum cover speech fundamentals
+  const lo=Math.floor(freq.length*0.03), hi=Math.floor(freq.length*0.35);
+  let sum=0,pk=0;
+  for(let i=lo;i<hi;i++){sum+=freq[i]; if(freq[i]>pk) pk=freq[i];}
+  const avg=sum/(hi-lo);
+  // Blend average + peak for more responsive but not jumpy movement
+  const signal = avg * 0.5 + pk * 0.5;
+  const sens   = document.getElementById('lipSens').value / 65;
+  // Lower noise floor: signal just needs to exceed ~15 to start opening
+  const target = Math.min(1, Math.max(0, (signal - 15) / 70 * sens));
+  // Fast attack (snap open), slower release (natural jaw close)
+  const speed  = target > A.mouthOpen ? 0.6 : 0.22;
+  A.mouthOpen += (target - A.mouthOpen) * speed;
+
+  // Blink
+  const bi=+document.getElementById('blinkInt').value;
+  A.blinkTimer+=dt;
+  if(A.blinkState===0&&A.blinkTimer>=bi+Math.sin(A.t*0.4)*0.5){A.blinkState=1;A.blinkProg=0;A.blinkTimer=0;}
+  else if(A.blinkState===1){A.blinkProg+=dt*10; if(A.blinkProg>=1){A.blinkState=2;A.blinkProg=0;}}
+  else if(A.blinkState===2){A.blinkProg+=dt*8;  if(A.blinkProg>=1){A.blinkState=0;A.blinkProg=0;}}
+  A.eyeBlink=A.blinkState===1?A.blinkProg:A.blinkState===2?1-A.blinkProg:0;
+
+  // Head — small, natural range so only the head moves, not the whole body
+  const hs=document.getElementById('headSway').value/100;
+  A.headAngle=(Math.sin(A.t*.7)*.018+Math.sin(A.t*1.9)*.007)*hs;
+  if(A.mouthOpen>0.15) A.headAngle+=Math.sin(A.t*4.2)*.007*hs;
+  A.headBobY=Math.sin(A.t*1.1)*2.5*hs;
+}
+
+// ═══════════════════════════════
+//  DRAW
+// ═══════════════════════════════
+function redraw(){ if(!A.isPlaying) drawFrame(); }
+
+function drawFrame(){
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // BG
+  if(bgImg.img){
+    const r=bgImg.img.naturalWidth/bgImg.img.naturalHeight, cr=W/H;
+    let bw,bh,bx,by;
+    if(r>cr){bh=H;bw=H*r;bx=(W-bw)/2;by=0;}
+    else{bw=W;bh=W/r;bx=0;by=(H-bh)/2;}
+    ctx.drawImage(bgImg.img,bx,by,bw,bh);
+  } else {
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#1a1a3e'); g.addColorStop(1,'#0a0a1e');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  }
+
+  if(!charObj.img){
+    ctx.font=`${W*0.022}px Segoe UI`; ctx.fillStyle='rgba(139,92,246,.4)';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('Upload a character image, then drag the face markers onto the face',W/2,H/2);
+    if(setupMode) drawMarkers(); return;
+  }
+
+  const {x:cdx,y:cdy}=charDrawPos();
+  const cw=charObj.img.naturalWidth*charObj.scale;
+  const ch=charObj.img.naturalHeight*charObj.scale;
+
+  const faceW=Math.hypot(LM.eyeR.x-LM.eyeL.x,LM.eyeR.y-LM.eyeL.y);
+  const eyeMidY=(LM.eyeL.y+LM.eyeR.y)/2;
+  const faceH=LM.mouth.y-eyeMidY;
+  // Neck cut: just below the mouth
+  const neckY=LM.mouth.y+faceH*0.75;
+  const pivX=(LM.eyeL.x+LM.eyeR.x)/2;
+  const pivY=eyeMidY;
+
+  // ── 1. BODY — static, no transform ──
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0,neckY,W,H-neckY); ctx.clip();
+  ctx.drawImage(charObj.img,cdx,cdy,cw,ch);
+  ctx.restore();
+
+  // ── 2. HEAD — only this region rotates ──
+  ctx.save();
+  ctx.translate(pivX, pivY + A.headBobY);
+  ctx.rotate(A.headAngle);
+  ctx.translate(-pivX,-pivY);
+  // Clip to head region, overlapping neck slightly to hide the seam
+  ctx.beginPath();
+  ctx.rect(cdx-4, cdy-4, cw+8, neckY-cdy+faceH*0.28+4);
+  ctx.clip();
+  ctx.drawImage(charObj.img,cdx,cdy,cw,ch);
+
+  // Eye blink overlays
+  if(A.eyeBlink>0){
+    const er=faceW*0.13*(document.getElementById('eyeSz').value/100);
+    eyelid(ctx,LM.eyeL.x,LM.eyeL.y,er,A.eyeBlink);
+    eyelid(ctx,LM.eyeR.x,LM.eyeR.y,er,A.eyeBlink);
+  }
+
+  // Jaw-drop lip animation
+  const lipSz       = document.getElementById('mouthSz').value/100;
+  const lipRot      = document.getElementById('lipRot').value * Math.PI/180;
+  const lipWStretch = document.getElementById('lipW').value/100;
+  jawDrop(ctx, charObj.img, cdx, cdy, charObj.scale,
+          LM.mouth.x, LM.mouth.y, faceW, A.mouthOpen,
+          lipSz, lipRot, lipWStretch);
+
+  ctx.restore();
+  if(setupMode) drawMarkers();
+  drawBubble();
+}
+
+// ── Eyelid ──
+function eyelid(ctx,ex,ey,r,b){
+  const skin=document.getElementById('skinColor').value;
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(ex,ey,r*1.6,r,0,0,Math.PI*2); ctx.clip();
+  ctx.fillStyle=skin;
+  ctx.fillRect(ex-r*1.7,ey-r-2,r*3.4,r*2.1*b+2);
+  if(b>0.05){
+    ctx.strokeStyle=shade(skin,-30);
+    ctx.lineWidth=Math.max(1.5,r*.14);
+    const lb=ey-r-2+r*2.1*b;
+    ctx.beginPath(); ctx.moveTo(ex-r*1.5,lb); ctx.quadraticCurveTo(ex,lb+r*.3*b,ex+r*1.5,lb); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ── Jaw-Drop Mouth Animation ──
+// Strategy:
+//  - The character image already has the upper lip drawn (from the head pass).
+//    We never touch it — no skin blob, no upper-jaw redraw.
+//  - We only modify THREE things each frame:
+//    1. Fill the jaw-gap (my → my+dropAmt) with skin colour + dark cavity
+//    2. Draw teeth/tongue inside the cavity
+//    3. Stamp the lower-jaw pixels (from the image) shifted DOWN by dropAmt
+// No outer ellipse clip, no individual jaw clips → no visible oval artefact.
+function jawDrop(ctx, img, cdx, cdy, scale, mx, my, fw, open, sz, rot, wStretch) {
+  sz = sz || 1; rot = rot || 0; wStretch = wStretch || 1;
+  if (!img) return;
+
+  // Setup mode: preview at 35% so user can confirm landmark placement
+  const drawOpen = setupMode ? Math.max(open, 0.35) : open;
+  if (drawOpen < 0.004) return;   // fully closed → leave original pixels untouched
+
+  // ── Dimensions in canvas-space pixels ──
+  const halfW   = fw * 0.46 * sz;   // half-width of the mouth patch
+  const lowerH  = fw * 0.30 * sz;   // height of lower-jaw strip (lip + chin)
+  const maxDrop = fw * 0.28 * sz;   // pixel distance for fully-open jaw
+  const dropAmt = drawOpen * maxDrop;
+
+  // ── Same region in IMAGE pixel space ──
+  const iMx = (mx - cdx) / scale;
+  const iMy = (my - cdy) / scale;
+  const iHW = halfW  / scale;
+  const iLH = lowerH / scale;
+  const iW  = img.naturalWidth, iH = img.naturalHeight;
+
+  const skin = document.getElementById('skinColor').value;
+
+  ctx.save();
+  ctx.translate(mx, my); ctx.rotate(rot); ctx.scale(wStretch, 1); ctx.translate(-mx, -my);
+
+  // ─────────────────────────────────────────────────
+  //  STEP 1 — fill the jaw-drop gap with skin colour
+  //  (covers the original lower-lip pixels in the gap)
+  // ─────────────────────────────────────────────────
+  ctx.fillStyle = skin;
+  ctx.fillRect(mx - halfW, my, halfW * 2, dropAmt + 1);
+
+  // ─────────────────────────────────────────────────
+  //  STEP 2 — dark mouth cavity (bezier shape)
+  // ─────────────────────────────────────────────────
+  function cavityPath() {
+    ctx.beginPath();
+    ctx.moveTo(mx - halfW * 0.88, my);
+    ctx.bezierCurveTo(mx - halfW * 0.50, my + dropAmt * 0.96,
+                      mx + halfW * 0.50, my + dropAmt * 0.96,
+                      mx + halfW * 0.88, my);
+    ctx.bezierCurveTo(mx + halfW * 0.50, my + dropAmt * 0.04,
+                      mx - halfW * 0.50, my + dropAmt * 0.04,
+                      mx - halfW * 0.88, my);
+    ctx.closePath();
+  }
+  cavityPath();
+  ctx.fillStyle = '#0b0108'; ctx.fill();
+
+  // ─────────────────────────────────────────────────
+  //  STEP 3 — teeth + tongue (clipped to cavity)
+  // ─────────────────────────────────────────────────
+  if (drawOpen > 0.13) {
+    ctx.save();
+    cavityPath(); ctx.clip();
+
+    // Upper teeth
+    ctx.fillStyle = '#f0ede8';
+    ctx.fillRect(mx - halfW * 0.84, my, halfW * 1.68, dropAmt * 0.44);
+    // Gum gradient
+    const gg = ctx.createLinearGradient(0, my, 0, my + dropAmt * 0.13);
+    gg.addColorStop(0, 'rgba(210,95,95,.45)'); gg.addColorStop(1, 'transparent');
+    ctx.fillStyle = gg;
+    ctx.fillRect(mx - halfW * 0.84, my, halfW * 1.68, dropAmt * 0.13);
+    // Tooth dividers
+    ctx.strokeStyle = 'rgba(170,165,155,.36)'; ctx.lineWidth = 0.9;
+    const tw = halfW * 1.68 / 7;
+    for (let i = 1; i < 7; i++) {
+      const tx = mx - halfW * 0.84 + i * tw;
+      ctx.beginPath(); ctx.moveTo(tx, my); ctx.lineTo(tx, my + dropAmt * 0.41); ctx.stroke();
+    }
+    // Lower teeth + tongue for wide-open
+    if (drawOpen > 0.48) {
+      ctx.fillStyle = '#ece9e4';
+      ctx.fillRect(mx - halfW * 0.68, my + dropAmt * 0.57, halfW * 1.36, dropAmt * 0.25);
+      ctx.beginPath();
+      ctx.ellipse(mx, my + dropAmt * 0.79, halfW * 0.30, dropAmt * 0.16, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#bf5060'; ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ─────────────────────────────────────────────────
+  //  STEP 4 — lower jaw pixels shifted down
+  //  (stamps the character's own lower-lip pixels at
+  //   their new position; no clip needed)
+  // ─────────────────────────────────────────────────
+  const lx0 = Math.max(0, iMx - iHW);
+  const ly0 = Math.max(0, iMy);
+  const lx1 = Math.min(iW, iMx + iHW);
+  const ly1 = Math.min(iH, iMy + iLH);
+  if (lx1 > lx0 && ly1 > ly0) {
+    const dxOff = (lx0 - (iMx - iHW)) * scale;   // adjust if src was clamped
+    const dyOff = (ly0 - iMy)         * scale;
+    ctx.drawImage(img,
+      lx0, ly0, lx1 - lx0, ly1 - ly0,
+      mx - halfW + dxOff, my + dropAmt + dyOff,
+      (lx1 - lx0) * scale, (ly1 - ly0) * scale);
+  }
+
+  ctx.restore(); // pop rotation / h-stretch
+}
+
+// ── Speech Bubble ──
+function toggleBubble(){
+  bubble.visible=!bubble.visible;
+  const btn=document.getElementById('bubbleToggle');
+  btn.textContent=bubble.visible?'💬 Disable Bubble':'💬 Enable Bubble';
+  btn.className=bubble.visible?'btn btn-p':'btn btn-o';
+  redraw();
+}
+function setBubbleSide(btn){
+  document.querySelectorAll('[data-side]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  bubble.arrowSide=btn.dataset.side;
+  redraw();
+}
+
+// Word-wrap helper (handles space-separated and character-by-character for dense scripts)
+function wrapText(ctx,text,maxW){
+  const out=[];
+  for(const para of text.split('\n')){
+    if(!para){out.push('');continue;}
+    const words=para.split(' ');
+    let line='';
+    for(const word of words){
+      const test=line?line+' '+word:word;
+      if(ctx.measureText(test).width<=maxW){line=test;}
+      else{
+        if(line) out.push(line);
+        if(ctx.measureText(word).width>maxW){
+          // char-by-char fallback (Kannada / long tokens)
+          let c='';
+          for(const ch of [...word]){
+            const t2=c+ch;
+            if(ctx.measureText(t2).width<=maxW){c=t2;}
+            else{if(c)out.push(c);c=ch;}
+          }
+          line=c;
+        } else {line=word;}
+      }
+    }
+    if(line)out.push(line);
+  }
+  return out.length?out:[''];
+}
+
+function drawBubble(){
+  if(!bubble.visible) return;
+  const rawText=(document.getElementById('bubbleText')||{}).value||'';
+  if(!rawText.trim()) return;
+
+  const fontSize = +document.getElementById('bFont').value;
+  const bw       = +document.getElementById('bWid').value;
+  const r        = +document.getElementById('bRad').value;
+  const bgColor  = document.getElementById('bBg').value;
+  const textColor= document.getElementById('bFg').value;
+  const bdrColor = document.getElementById('bBdr').value;
+  const side     = bubble.arrowSide;
+  const ap       = +document.getElementById('bAp').value/100;
+  const al       = +document.getElementById('bAl').value;
+  const aw       = +document.getElementById('bAw').value;  // half-width of arrow base
+  const pad      = Math.max(10, fontSize*0.55);
+
+  ctx.save();
+  ctx.font=`${fontSize}px 'Noto Sans Kannada','Noto Sans','Segoe UI',sans-serif`;
+
+  const lines = wrapText(ctx, rawText, bw-pad*2);
+  const lineH  = fontSize*1.42;
+  const bh     = lines.length*lineH + pad*2;
+  bubble.bh    = bh;   // cache for drag hit-test
+
+  const bx=Math.round(bubble.x), by=Math.round(bubble.y);
+
+  // ── Combined rounded-rect + tail path ──
+  function buildPath(){
+    // clamp arrow position so tail base stays on edge
+    const cpX = bx + Math.max(aw+r, Math.min(bw-aw-r, ap*bw));
+    const cpY = by + Math.max(aw+r, Math.min(bh-aw-r, ap*bh));
+    ctx.beginPath();
+    if(side==='bottom'){
+      ctx.moveTo(bx+r,by);
+      ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,   bx+bw,by+r,   r);
+      ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,bx+bw-r,by+bh,r);
+      ctx.lineTo(cpX+aw,by+bh);       ctx.lineTo(cpX,by+bh+al);  ctx.lineTo(cpX-aw,by+bh);
+      ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,   bx,by+bh-r,   r);
+      ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,      bx+r,by,       r);
+    } else if(side==='top'){
+      ctx.moveTo(bx+r,by);
+      ctx.lineTo(cpX-aw,by);          ctx.lineTo(cpX,by-al);     ctx.lineTo(cpX+aw,by);
+      ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,   bx+bw,by+r,   r);
+      ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,bx+bw-r,by+bh,r);
+      ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,   bx,by+bh-r,   r);
+      ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,      bx+r,by,       r);
+    } else if(side==='left'){
+      ctx.moveTo(bx+r,by);
+      ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,   bx+bw,by+r,   r);
+      ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,bx+bw-r,by+bh,r);
+      ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,   bx,by+bh-r,   r);
+      ctx.lineTo(bx,cpY+aw);          ctx.lineTo(bx-al,cpY); ctx.lineTo(bx,cpY-aw);
+      ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,      bx+r,by,       r);
+    } else {  // right
+      ctx.moveTo(bx+r,by);
+      ctx.lineTo(bx+bw-r,by);         ctx.arcTo(bx+bw,by,      bx+bw,by+r,      r);
+      ctx.lineTo(bx+bw,cpY-aw);       ctx.lineTo(bx+bw+al,cpY); ctx.lineTo(bx+bw,cpY+aw);
+      ctx.lineTo(bx+bw,by+bh-r);      ctx.arcTo(bx+bw,by+bh,  bx+bw-r,by+bh,   r);
+      ctx.lineTo(bx+r,by+bh);         ctx.arcTo(bx,by+bh,      bx,by+bh-r,      r);
+      ctx.lineTo(bx,by+r);            ctx.arcTo(bx,by,         bx+r,by,          r);
+    }
+    ctx.closePath();
+  }
+
+  // Shadow pass
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,0.28)'; ctx.shadowBlur=16; ctx.shadowOffsetY=4;
+  buildPath(); ctx.fillStyle=bgColor; ctx.fill();
+  ctx.restore();
+
+  // Fill + border
+  buildPath();
+  ctx.fillStyle=bgColor; ctx.fill();
+  ctx.strokeStyle=bdrColor; ctx.lineWidth=2; ctx.stroke();
+
+  // Text
+  ctx.fillStyle=textColor;
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  lines.forEach((ln,i)=>ctx.fillText(ln, bx+pad, by+pad+i*lineH));
+  ctx.restore();
+}
+
+// ── Markers ──
+function drawMarkers(){
+  Object.values(LM).forEach(lm=>{
+    ctx.save();
+    ctx.beginPath(); ctx.arc(lm.x,lm.y,9,0,Math.PI*2);
+    ctx.fillStyle=lm.col+'bb'; ctx.strokeStyle=lm.col; ctx.lineWidth=2; ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=lm.col; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(lm.x-13,lm.y); ctx.lineTo(lm.x+13,lm.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lm.x,lm.y-13); ctx.lineTo(lm.x,lm.y+13); ctx.stroke();
+    ctx.font='bold 10px Segoe UI'; ctx.fillStyle='#fff'; ctx.textAlign='center';
+    ctx.fillText(lm.lbl,lm.x,lm.y-16);
+    ctx.restore();
+  });
+}
+
+// ═══════════════════════════════
+//  CANVAS INTERACTION
+// ═══════════════════════════════
+function cPos(e){
+  const r=canvas.getBoundingClientRect();
+  const sx=canvas.width/r.width, sy=canvas.height/r.height;
+  const cx=e.touches?e.touches[0].clientX:e.clientX;
+  const cy=e.touches?e.touches[0].clientY:e.clientY;
+  return{x:(cx-r.left)*sx,y:(cy-r.top)*sy};
+}
+canvas.addEventListener('mousedown',e=>{
+  if(A.isPlaying) return;
+  const p=cPos(e);
+  // Bubble drag (works even when setup is locked)
+  if(bubble.visible &&
+     p.x>=bubble.x && p.x<=bubble.x+( +document.getElementById('bWid').value) &&
+     p.y>=bubble.y && p.y<=bubble.y+bubble.bh){
+    dragging='bubble'; dragOff={x:p.x-bubble.x,y:p.y-bubble.y}; return;
+  }
+  if(!setupMode) return;
+  for(const [k,lm] of Object.entries(LM)){
+    if(Math.hypot(p.x-lm.x,p.y-lm.y)<16){dragging=k;dragOff={x:p.x-lm.x,y:p.y-lm.y};return;}
+  }
+  if(onChar(p.x,p.y)){dragging='char';dragOff={x:p.x-charObj.offsetX,y:p.y-charObj.offsetY};}
+});
+canvas.addEventListener('mousemove',e=>{
+  if(!dragging) return;
+  const p=cPos(e);
+  if(dragging==='bubble'){bubble.x=p.x-dragOff.x;bubble.y=p.y-dragOff.y;}
+  else if(dragging==='char'){charObj.offsetX=p.x-dragOff.x;charObj.offsetY=p.y-dragOff.y;}
+  else{LM[dragging].x=p.x-dragOff.x;LM[dragging].y=p.y-dragOff.y;}
+  redraw();
+});
+canvas.addEventListener('mouseup',()=>dragging=null);
+canvas.addEventListener('mouseleave',()=>dragging=null);
+canvas.addEventListener('mousemove',e=>{
+  if(A.isPlaying) return;
+  const p=cPos(e);
+  const onLm=setupMode&&Object.values(LM).some(lm=>Math.hypot(p.x-lm.x,p.y-lm.y)<16);
+  const onBubble=bubble.visible&&p.x>=bubble.x&&p.x<=bubble.x+(+document.getElementById('bWid').value)&&p.y>=bubble.y&&p.y<=bubble.y+bubble.bh;
+  canvas.style.cursor=dragging?'grabbing':onBubble?'move':onLm?'grab':onChar(p.x,p.y)&&setupMode?'move':'default';
+});
+canvas.addEventListener('wheel',e=>{
+  if(!setupMode||!charObj.img) return; e.preventDefault();
+  charObj.scale=Math.max(0.05,Math.min(6,charObj.scale*(1-e.deltaY*.001)));
+  const pct=Math.round(charObj.scale*100);
+  document.getElementById('charScaleSlider').value=pct;
+  document.getElementById('charScaleVal').textContent=pct+'%';
+  redraw();
+},{passive:false});
+
+// ═══════════════════════════════
+//  HELPERS
+// ═══════════════════════════════
+function charDrawPos(){
+  const W=canvas.width,H=canvas.height;
+  if(!charObj.img) return{x:W/2,y:H/2};
+  const cw=charObj.img.naturalWidth*charObj.scale;
+  const ch=charObj.img.naturalHeight*charObj.scale;
+  return{x:W/2-cw/2+charObj.offsetX,y:H-ch+charObj.offsetY};
+}
+function onChar(x,y){
+  if(!charObj.img) return false;
+  const {x:cx,y:cy}=charDrawPos();
+  const cw=charObj.img.naturalWidth*charObj.scale;
+  const ch=charObj.img.naturalHeight*charObj.scale;
+  return x>=cx&&x<=cx+cw&&y>=cy&&y<=cy+ch;
+}
+function shade(hex,d){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return`rgb(${Math.max(0,Math.min(255,r+d))},${Math.max(0,Math.min(255,g+d))},${Math.max(0,Math.min(255,b+d))})`;
+}
+function setStatus(s,m){
+  document.getElementById('smsg').textContent=m;
+  document.getElementById('sdot').className='sdot '+(s==='rec'?'rec':s==='play'?'play':s==='ready'?'ready':'');
+}
+document.addEventListener('click',()=>{if(A.audioCtx&&A.audioCtx.state==='suspended')A.audioCtx.resume();},{once:true});
+
+// ═══════════════════════════════
+//  DRAG & DROP (onto the uprow zones)
+// ═══════════════════════════════
+function setupDrop(rowId, handler){
+  const el=document.getElementById(rowId);
+  el.addEventListener('dragover',e=>{e.preventDefault();el.style.borderColor='#a78bfa';});
+  el.addEventListener('dragleave',()=>el.style.borderColor='');
+  el.addEventListener('drop',e=>{
+    e.preventDefault(); el.style.borderColor='';
+    const f=e.dataTransfer.files[0]; if(f) handler({files:[f]});
+  });
+}
+setupDrop('bgRow',    loadBg);
+setupDrop('charRow',  loadChar);
+setupDrop('audioRow', loadAudio);
+
+// Also allow dropping anywhere on the canvas (auto-detects image vs audio)
+canvas.addEventListener('dragover',e=>e.preventDefault());
+canvas.addEventListener('drop',e=>{
+  e.preventDefault();
+  const f=e.dataTransfer.files[0]; if(!f) return;
+  if(f.type.startsWith('image/')) loadChar({files:[f]});
+  else if(f.type.startsWith('audio/')) loadAudio({files:[f]});
+});
+
+// Init
+resetLandmarks(); drawFrame();
+</script>
+</body>
+</html>
