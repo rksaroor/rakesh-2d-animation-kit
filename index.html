@@ -487,6 +487,7 @@ const A={
   blinkState:0,blinkProg:0,blinkTimer:0,
   headAngle:0, headBobY:0,
   lipMicro:0, lipOpen:0,
+  viseme:'closed', visemeHold:0,
   audioCtx:null,analyser:null,audioEl:null,audioSrc:null,
 };
 let animId=null, mediaRecorder=null, recChunks=[], recMimeType='video/webm';
@@ -1011,31 +1012,61 @@ function update(dt){
         ` (${Math.floor(TW.currentChars)}/${totalChars})`;
   }
 
-  // ── Lip sync ──
+  // ── Lip sync + viseme classification ──
   const freq=new Uint8Array(A.analyser.frequencyBinCount);
+  const time=new Uint8Array(A.analyser.fftSize);
   A.analyser.getByteFrequencyData(freq);
-  const lo=Math.floor(freq.length*0.03), hi=Math.floor(freq.length*0.35);
+  A.analyser.getByteTimeDomainData(time);
+
+  // Band energy helper (returns 0–1)
+  const BE=(lo,hi)=>{let s=0,n=0;for(let i=Math.floor(freq.length*lo);i<Math.floor(freq.length*hi);i++){s+=freq[i];n++;}return n?s/n/255:0;};
+
+  // Legacy amplitude for jawDrop compatibility
+  const lo=Math.floor(freq.length*0.03),hi=Math.floor(freq.length*0.35);
   let sum=0,pk=0;
-  for(let i=lo;i<hi;i++){sum+=freq[i]; if(freq[i]>pk)pk=freq[i];}
-  const avg=sum/(hi-lo);
-  const signal=avg*0.5+pk*0.5;
+  for(let i=lo;i<hi;i++){sum+=freq[i];if(freq[i]>pk)pk=freq[i];}
+  const signal=(sum/(hi-lo))*0.5+pk*0.5;
   const sens=document.getElementById('lipSens').value/65;
   const target=Math.min(1,Math.max(0,(signal-15)/70*sens));
   const speed=target>A.mouthOpen?0.6:0.22;
   A.mouthOpen+=(target-A.mouthOpen)*speed;
 
-  // ── Natural lip micro-movement (for lip overlay) ──
-  // Sample mid-high frequencies — these encode rapid articulatory events (consonants, transitions)
-  const hiLo=Math.floor(freq.length*0.30), hiHi=Math.floor(freq.length*0.62);
-  let hiSum=0; for(let i=hiLo;i<hiHi;i++) hiSum+=freq[i];
-  const hiAvg=hiSum/(hiHi-hiLo);
-  const artNoise = target>0.05 ? (hiAvg/255)*0.22 : 0;
-  A.lipMicro += (artNoise - A.lipMicro) * 0.62;
-  // Two overlapping sine flutters simulating rapid syllable transitions
-  const flutter = target>0.05
-    ? (Math.sin(A.t*23.4)*0.030 + Math.sin(A.t*14.1+1.2)*0.018) * target
-    : 0;
-  A.lipOpen = Math.min(1, Math.max(0, A.mouthOpen + A.lipMicro*0.55 + flutter));
+  // ── Spectral features for viseme detection ──
+  const eVowel = BE(0.04,0.20);   // vowel formants (F1/F2)
+  const eMid   = BE(0.20,0.45);   // mid-range consonants
+  const eHigh  = BE(0.45,0.80);   // fricatives (S,SH,F,V)
+  const eTotal = (eVowel*2+eMid+eHigh)/4;
+
+  // Spectral centroid: low = round vowels (O/W), high = bright/fricative
+  let wSum=0,fSum=0;
+  for(let i=0;i<freq.length;i++){wSum+=i*freq[i];fSum+=freq[i];}
+  const centroid=fSum>0?(wSum/fSum)/freq.length:0;
+
+  // Zero-crossing rate: high for fricatives / sibilants (S,SH,F)
+  let zcr=0;
+  for(let i=1;i<time.length;i++)if((time[i]>=128)!==(time[i-1]>=128))zcr++;
+  zcr/=time.length;
+
+  // Classify to viseme
+  let vTarget='closed';
+  if(eTotal>0.06){
+    if     (eHigh>0.15&&zcr>0.07)       vTarget='fric';   // F,V,S,SH — thin gap
+    else if(centroid<0.11&&eVowel>0.16) vTarget='round';  // O,OO,W  — pursed
+    else if(centroid>0.26&&eMid>0.10)   vTarget='wide';   // EE,IH,AE — stretched
+    else if(eVowel>0.14)                vTarget='open';   // AH,AA    — open vowel
+    else                                vTarget='mid';    // general
+  }
+  // Hold each viseme ≥4 frames (~65ms) before switching — prevents jitter
+  A.visemeHold++;
+  if(vTarget!==A.viseme&&A.visemeHold>=4){A.viseme=vTarget;A.visemeHold=0;}
+
+  // ── Micro-flutter layer for natural movement ──
+  const hiLo=Math.floor(freq.length*0.30),hiHi=Math.floor(freq.length*0.62);
+  let hiSum=0;for(let i=hiLo;i<hiHi;i++)hiSum+=freq[i];
+  const artNoise=target>0.05?(hiSum/(hiHi-hiLo)/255)*0.20:0;
+  A.lipMicro+=(artNoise-A.lipMicro)*0.62;
+  const flutter=target>0.05?(Math.sin(A.t*23.4)*0.028+Math.sin(A.t*14.1+1.2)*0.016)*target:0;
+  A.lipOpen=Math.min(1,Math.max(0,A.mouthOpen+A.lipMicro*0.50+flutter));
 
   // ── Blink ──
   const bi=+document.getElementById('blinkInt').value;
@@ -1094,16 +1125,28 @@ function drawLipOverlay(){
   const yOff = +document.getElementById('lipOvY').value;
   const rot  = document.getElementById('lipOvRot').value * Math.PI / 180;
   const col  = document.getElementById('lipOvColor').value;
-  const open = setupMode ? Math.max(A.lipOpen, 0.35) : A.lipOpen;
+  const openBase = setupMode ? Math.max(A.lipOpen, 0.35) : A.lipOpen;
+
+  // ── Per-viseme shape modifiers ──
+  // Each viseme adjusts width, cupid's-bow curve, and openness independently
+  const VM = {
+    closed: { wScale:1.00, bowAdd: 0.00, openMul:1.00 },
+    mid:    { wScale:1.00, bowAdd: 0.00, openMul:1.00 },
+    open:   { wScale:1.07, bowAdd: 0.00, openMul:1.20 }, // AH/AA — wider jaw
+    wide:   { wScale:1.16, bowAdd:-0.28, openMul:1.00 }, // EE/IH — stretched corners, flatter bow
+    round:  { wScale:0.68, bowAdd: 0.38, openMul:0.78 }, // O/OO/W — pursed, narrow, deep bow
+    fric:   { wScale:0.86, bowAdd: 0.00, openMul:0.20 }, // F/V/S — barely open, tight
+  };
+  const vm = VM[A.viseme] || VM.mid;
 
   const p   = LIP_PARAMS[LIP.style] || LIP_PARAMS.natF;
-  // Lips stretch slightly wider at the corners when open (natural vowel shape)
-  const talkStretch = 1 + open * 0.07;
-  const mw  = faceW * p.hw * sz * talkStretch;
-  const ulH = faceW * p.ul * sz;
-  const llH = faceW * p.ll * sz;
-  const bow = p.bow;
-  const oh  = open * faceW * 0.22 * sz;
+  const talkStretch = 1 + openBase * 0.06;
+  const open   = openBase * vm.openMul;
+  const mw     = faceW * p.hw * sz * talkStretch * vm.wScale;
+  const ulH    = faceW * p.ul * sz;
+  const llH    = faceW * p.ll * sz;
+  const bow    = p.bow + vm.bowAdd;
+  const oh     = open * faceW * 0.22 * sz;
 
   // apply same head-sway transform so lips follow head
   ctx.save();
