@@ -486,6 +486,7 @@ const A={
   mouthOpen:0, eyeBlink:0,
   blinkState:0,blinkProg:0,blinkTimer:0,
   headAngle:0, headBobY:0,
+  lipMicro:0, lipOpen:0,
   audioCtx:null,analyser:null,audioEl:null,audioSrc:null,
 };
 let animId=null, mediaRecorder=null, recChunks=[], recMimeType='video/webm';
@@ -1023,6 +1024,19 @@ function update(dt){
   const speed=target>A.mouthOpen?0.6:0.22;
   A.mouthOpen+=(target-A.mouthOpen)*speed;
 
+  // ── Natural lip micro-movement (for lip overlay) ──
+  // Sample mid-high frequencies — these encode rapid articulatory events (consonants, transitions)
+  const hiLo=Math.floor(freq.length*0.30), hiHi=Math.floor(freq.length*0.62);
+  let hiSum=0; for(let i=hiLo;i<hiHi;i++) hiSum+=freq[i];
+  const hiAvg=hiSum/(hiHi-hiLo);
+  const artNoise = target>0.05 ? (hiAvg/255)*0.22 : 0;
+  A.lipMicro += (artNoise - A.lipMicro) * 0.62;
+  // Two overlapping sine flutters simulating rapid syllable transitions
+  const flutter = target>0.05
+    ? (Math.sin(A.t*23.4)*0.030 + Math.sin(A.t*14.1+1.2)*0.018) * target
+    : 0;
+  A.lipOpen = Math.min(1, Math.max(0, A.mouthOpen + A.lipMicro*0.55 + flutter));
+
   // ── Blink ──
   const bi=+document.getElementById('blinkInt').value;
   A.blinkTimer+=dt;
@@ -1080,10 +1094,12 @@ function drawLipOverlay(){
   const yOff = +document.getElementById('lipOvY').value;
   const rot  = document.getElementById('lipOvRot').value * Math.PI / 180;
   const col  = document.getElementById('lipOvColor').value;
-  const open = setupMode ? Math.max(A.mouthOpen, 0.35) : A.mouthOpen;
+  const open = setupMode ? Math.max(A.lipOpen, 0.35) : A.lipOpen;
 
   const p   = LIP_PARAMS[LIP.style] || LIP_PARAMS.natF;
-  const mw  = faceW * p.hw * sz;
+  // Lips stretch slightly wider at the corners when open (natural vowel shape)
+  const talkStretch = 1 + open * 0.07;
+  const mw  = faceW * p.hw * sz * talkStretch;
   const ulH = faceW * p.ul * sz;
   const llH = faceW * p.ll * sz;
   const bow = p.bow;
@@ -1257,6 +1273,9 @@ function drawFrame(){
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   }
 
+  // ── Speech Bubble (behind character, above background) ──
+  drawBubble();
+
   if(!charObj.img){
     ctx.font=`${W*0.022}px Segoe UI`; ctx.fillStyle='rgba(139,92,246,.4)';
     ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -1304,7 +1323,6 @@ function drawFrame(){
   ctx.restore();
   if(LIP.enabled) drawLipOverlay();
   if(setupMode) drawMarkers();
-  drawBubble();
 }
 
 // ── Eyelid ──
