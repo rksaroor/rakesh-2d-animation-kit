@@ -317,6 +317,11 @@ input[type=color]{width:34px;height:27px;border:1px solid #333360;border-radius:
           <input type="range" id="lipOvY" min="-60" max="60" value="0"
             oninput="document.getElementById('lipOvYVal').textContent=this.value;redraw()">
         </div>
+        <div class="sl-row">
+          <div class="sl-hd"><span>Rotation</span><span class="sl-val" id="lipOvRotVal">0°</span></div>
+          <input type="range" id="lipOvRot" min="-45" max="45" value="0"
+            oninput="document.getElementById('lipOvRotVal').textContent=this.value+'°';redraw()">
+        </div>
         <label class="chk-row" style="margin-top:6px">
           <input type="checkbox" id="lipDisableJaw" checked> Disable jaw-drop (lips only mode)
         </label>
@@ -1073,6 +1078,7 @@ function drawLipOverlay(){
   const pivY = (LM.eyeL.y+LM.eyeR.y)/2;
   const sz   = document.getElementById('lipOvSz').value/100;
   const yOff = +document.getElementById('lipOvY').value;
+  const rot  = document.getElementById('lipOvRot').value * Math.PI / 180;
   const col  = document.getElementById('lipOvColor').value;
   const open = setupMode ? Math.max(A.mouthOpen, 0.35) : A.mouthOpen;
 
@@ -1089,6 +1095,7 @@ function drawLipOverlay(){
   ctx.rotate(A.headAngle);
   ctx.translate(-pivX, -pivY);
   ctx.translate(LM.mouth.x, LM.mouth.y + yOff);
+  if(rot) ctx.rotate(rot);
 
   if(open < 0.04){
     _drawLipClosed(ctx, mw, ulH, llH, bow, col);
