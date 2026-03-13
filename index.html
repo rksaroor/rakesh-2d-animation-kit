@@ -105,6 +105,12 @@ input[type=color]{width:34px;height:27px;border:1px solid #333360;border-radius:
 /* Checkbox toggle */
 .chk-row{display:flex;align-items:center;gap:7px;font-size:11px;color:#7070a0;cursor:pointer;margin-top:6px;}
 .chk-row input{accent-color:#8b5cf6;cursor:pointer;}
+
+/* ── Lip Overlay ── */
+.lip-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:8px;}
+.lipbtn{background:#181830;border:1.5px solid #333360;border-radius:6px;cursor:pointer;padding:5px 2px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;color:#7070a0;font-size:8.5px;font-weight:700;text-align:center;line-height:1.2;}
+.lipbtn:hover{border-color:#8b5cf6;color:#c4b5fd;}
+.lipbtn.on{border-color:#8b5cf6;background:#1e1040;color:#c4b5fd;}
 </style>
 </head>
 <body>
@@ -261,6 +267,62 @@ input[type=color]{width:34px;height:27px;border:1px solid #333360;border-radius:
         <div class="sl-hd"><span>Eye Size</span><span class="sl-val" id="eyeSzVal">100%</span></div>
         <input type="range" id="eyeSz" min="40" max="200" value="100"
           oninput="document.getElementById('eyeSzVal').textContent=this.value+'%';redraw()">
+      </div>
+    </div>
+
+    <!-- 6b. LIP OVERLAY -->
+    <div class="card">
+      <div class="ctitle"><em>✦</em> Lip Overlay</div>
+      <button id="lipToggle" class="btn btn-o" onclick="toggleLipOverlay()" style="margin-bottom:9px">💋 Enable Lip Overlay</button>
+      <div id="lipOverlayPanel" style="display:none">
+        <div class="sl-hd" style="margin-bottom:5px"><span>Style — pick Female or Male</span></div>
+        <div class="lip-grid">
+          <!-- Natural Female -->
+          <button class="lipbtn on" data-lip="natF" onclick="setLipStyle2(this)">
+            <svg width="40" height="17" viewBox="0 0 40 17"><path d="M4 8.5Q10 15 20 15Q30 15 36 8.5Q30 2 20 2Q10 2 4 8.5Z" fill="#C06070" stroke="#903050" stroke-width="1"/><path d="M4 8.5Q10 5.5 20 5Q30 5.5 36 8.5" fill="none" stroke="#a05060" stroke-width="1.2"/><ellipse cx="15" cy="6" rx="4.5" ry="1.8" fill="rgba(255,200,210,0.42)"/></svg>
+            <span>Nat ♀</span>
+          </button>
+          <!-- Glossy Female -->
+          <button class="lipbtn" data-lip="glossF" onclick="setLipStyle2(this)">
+            <svg width="40" height="17" viewBox="0 0 40 17"><path d="M3 8.5Q10 16 20 16Q30 16 37 8.5Q30 1 20 1Q10 1 3 8.5Z" fill="#E0708A" stroke="#B04060" stroke-width="1"/><path d="M3 8.5Q10 4 20 4Q30 4 37 8.5" fill="none" stroke="#c05070" stroke-width="1.5"/><ellipse cx="13.5" cy="5.5" rx="5.5" ry="2.2" fill="rgba(255,220,235,0.58)"/><ellipse cx="24" cy="12" rx="4" ry="1.7" fill="rgba(255,220,235,0.38)"/></svg>
+            <span>Gloss ♀</span>
+          </button>
+          <!-- Soft Male -->
+          <button class="lipbtn" data-lip="softM" onclick="setLipStyle2(this)">
+            <svg width="40" height="17" viewBox="0 0 40 17"><path d="M3 8.5Q10 14.5 20 15Q30 14.5 37 8.5Q30 3 20 3.5Q10 3 3 8.5Z" fill="#B06050" stroke="#804040" stroke-width="1"/><path d="M3 8.5Q10 6 20 6Q30 6 37 8.5" fill="none" stroke="#904848" stroke-width="1"/><ellipse cx="15" cy="6.5" rx="4" ry="1.5" fill="rgba(255,200,188,0.3)"/></svg>
+            <span>Soft ♂</span>
+          </button>
+          <!-- Bold Male -->
+          <button class="lipbtn" data-lip="boldM" onclick="setLipStyle2(this)">
+            <svg width="40" height="17" viewBox="0 0 40 17"><path d="M2 8.5Q10 14 20 14Q30 14 38 8.5Q30 3 20 3.5Q10 3 2 8.5Z" fill="#904040" stroke="#6a2a2a" stroke-width="1.2"/><path d="M2 8.5Q10 6.5 20 6.5Q30 6.5 38 8.5" fill="none" stroke="#703030" stroke-width="1.5"/></svg>
+            <span>Bold ♂</span>
+          </button>
+          <!-- Neutral -->
+          <button class="lipbtn" data-lip="neutral" onclick="setLipStyle2(this)">
+            <svg width="40" height="17" viewBox="0 0 40 17"><path d="M5 8.5Q12 14.5 20 14.5Q28 14.5 35 8.5Q28 3.5 20 3.5Q12 3.5 5 8.5Z" fill="#B8607A" stroke="#8a4050" stroke-width="1"/><path d="M5 8.5Q12 6.5 20 6.5Q28 6.5 35 8.5" fill="none" stroke="#9a5060" stroke-width="1"/><ellipse cx="15.5" cy="6.8" rx="3.5" ry="1.4" fill="rgba(255,215,222,0.35)"/></svg>
+            <span>Neutral</span>
+          </button>
+        </div>
+        <div class="color-row" style="margin:6px 0">
+          <label>Lip Color:</label>
+          <input type="color" id="lipOvColor" value="#C06070" oninput="redraw()">
+        </div>
+        <div class="sl-row" style="margin-top:6px">
+          <div class="sl-hd"><span>Lip Size</span><span class="sl-val" id="lipOvSzVal">100%</span></div>
+          <input type="range" id="lipOvSz" min="30" max="220" value="100"
+            oninput="document.getElementById('lipOvSzVal').textContent=this.value+'%';redraw()">
+        </div>
+        <div class="sl-row">
+          <div class="sl-hd"><span>Vertical Nudge</span><span class="sl-val" id="lipOvYVal">0</span></div>
+          <input type="range" id="lipOvY" min="-60" max="60" value="0"
+            oninput="document.getElementById('lipOvYVal').textContent=this.value;redraw()">
+        </div>
+        <label class="chk-row" style="margin-top:6px">
+          <input type="checkbox" id="lipDisableJaw" checked> Disable jaw-drop (lips only mode)
+        </label>
+        <div class="lm-tip" style="margin-top:7px;font-size:10px">
+          Drag the <span style="color:#f472b6">pink Mouth</span> marker to position lips on your character's face.
+        </div>
       </div>
     </div>
 
@@ -972,6 +1034,201 @@ function update(dt){
 }
 
 // ═══════════════════════════════
+//  LIP OVERLAY
+// ═══════════════════════════════
+const LIP = { enabled: false, style: 'natF' };
+
+function toggleLipOverlay(){
+  LIP.enabled = !LIP.enabled;
+  const btn = document.getElementById('lipToggle');
+  btn.textContent = LIP.enabled ? '💋 Disable Lip Overlay' : '💋 Enable Lip Overlay';
+  btn.className   = LIP.enabled ? 'btn btn-p' : 'btn btn-o';
+  document.getElementById('lipOverlayPanel').style.display = LIP.enabled ? 'block' : 'none';
+  redraw();
+}
+
+function setLipStyle2(btn){
+  document.querySelectorAll('[data-lip]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  LIP.style = btn.dataset.lip;
+  redraw();
+}
+
+// ── style params: half-width, upper-lip-height, lower-lip-height, bow ──
+const LIP_PARAMS = {
+  natF:    { hw:0.29, ul:0.062, ll:0.078, bow:1.55 },
+  glossF:  { hw:0.32, ul:0.075, ll:0.095, bow:1.90 },
+  softM:   { hw:0.37, ul:0.048, ll:0.060, bow:0.75 },
+  boldM:   { hw:0.42, ul:0.048, ll:0.058, bow:0.45 },
+  neutral: { hw:0.32, ul:0.055, ll:0.068, bow:1.10 },
+};
+
+function drawLipOverlay(){
+  if(!LIP.enabled || !charObj.img) return;
+
+  const faceW = Math.hypot(LM.eyeR.x-LM.eyeL.x, LM.eyeR.y-LM.eyeL.y);
+  if(faceW < 5) return;
+
+  const pivX = (LM.eyeL.x+LM.eyeR.x)/2;
+  const pivY = (LM.eyeL.y+LM.eyeR.y)/2;
+  const sz   = document.getElementById('lipOvSz').value/100;
+  const yOff = +document.getElementById('lipOvY').value;
+  const col  = document.getElementById('lipOvColor').value;
+  const open = setupMode ? Math.max(A.mouthOpen, 0.35) : A.mouthOpen;
+
+  const p   = LIP_PARAMS[LIP.style] || LIP_PARAMS.natF;
+  const mw  = faceW * p.hw * sz;
+  const ulH = faceW * p.ul * sz;
+  const llH = faceW * p.ll * sz;
+  const bow = p.bow;
+  const oh  = open * faceW * 0.22 * sz;
+
+  // apply same head-sway transform so lips follow head
+  ctx.save();
+  ctx.translate(pivX, pivY + A.headBobY);
+  ctx.rotate(A.headAngle);
+  ctx.translate(-pivX, -pivY);
+  ctx.translate(LM.mouth.x, LM.mouth.y + yOff);
+
+  if(open < 0.04){
+    _drawLipClosed(ctx, mw, ulH, llH, bow, col);
+  } else {
+    _drawLipOpen(ctx, mw, ulH, llH, bow, oh, col, open);
+  }
+
+  ctx.restore();
+}
+
+function _drawLipClosed(ctx, mw, ulH, llH, bow, col){
+  const uc = shade(col,-18), lk = shade(col,-40);
+
+  // ── full mouth shape (base colour) ──
+  ctx.beginPath();
+  ctx.moveTo(-mw, 0);
+  ctx.bezierCurveTo(-mw*.50,-ulH*bow,  -mw*.16,-ulH*(bow+.8),  0,-ulH*(bow*.5+.55));
+  ctx.bezierCurveTo( mw*.16,-ulH*(bow+.8),  mw*.50,-ulH*bow,   mw, 0);
+  ctx.bezierCurveTo( mw*.55, llH*1.85,  -mw*.55, llH*1.85, -mw, 0);
+  ctx.closePath();
+  ctx.fillStyle = col; ctx.fill();
+
+  // ── upper lip overlay (darker shade) ──
+  ctx.beginPath();
+  ctx.moveTo(-mw, 0);
+  ctx.bezierCurveTo(-mw*.50,-ulH*bow,  -mw*.16,-ulH*(bow+.8),  0,-ulH*(bow*.5+.55));
+  ctx.bezierCurveTo( mw*.16,-ulH*(bow+.8),  mw*.50,-ulH*bow,   mw, 0);
+  ctx.bezierCurveTo( mw*.50,-ulH*.32,  -mw*.50,-ulH*.32, -mw, 0);
+  ctx.closePath();
+  ctx.fillStyle = uc; ctx.fill();
+
+  // ── seam / lip line ──
+  ctx.strokeStyle = lk;
+  ctx.lineWidth   = Math.max(.7, mw*.022);
+  ctx.lineCap     = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-mw, 0);
+  ctx.bezierCurveTo(-mw*.50,-ulH*.56, -mw*.16,-ulH*.92,  0,-ulH*.56);
+  ctx.bezierCurveTo( mw*.16,-ulH*.92,  mw*.50,-ulH*.56,  mw, 0);
+  ctx.stroke();
+
+  // ── lower-lip gloss highlight ──
+  ctx.save();
+  ctx.globalAlpha = 0.36;
+  ctx.fillStyle   = 'rgba(255,238,244,.9)';
+  ctx.beginPath();
+  ctx.ellipse(-mw*.16, llH*.65, mw*.28, llH*.30, .1, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function _drawLipOpen(ctx, mw, ulH, llH, bow, oh, col, open){
+  const uc = shade(col,-22);
+  const lc = shade(col,+14);
+  const lk = shade(col,-42);
+
+  // ── dark mouth cavity ──
+  ctx.beginPath();
+  ctx.moveTo(-mw*.90, 0);
+  ctx.bezierCurveTo(-mw*.50, oh*1.06,  mw*.50, oh*1.06,  mw*.90, 0);
+  ctx.bezierCurveTo( mw*.50,-oh*.06,  -mw*.50,-oh*.06, -mw*.90, 0);
+  ctx.closePath();
+  ctx.fillStyle = '#140208'; ctx.fill();
+
+  // ── teeth + tongue (clipped to cavity) ──
+  if(open > 0.12){
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(-mw*.90, 0);
+    ctx.bezierCurveTo(-mw*.50, oh*1.06,  mw*.50, oh*1.06,  mw*.90, 0);
+    ctx.bezierCurveTo( mw*.50,-oh*.06,  -mw*.50,-oh*.06, -mw*.90, 0);
+    ctx.clip();
+
+    // upper teeth
+    ctx.fillStyle = '#f0ede8';
+    ctx.beginPath();
+    ctx.roundRect(-mw*.82,-oh*.04, mw*1.64, oh*.48, [0,0,3,3]);
+    ctx.fill();
+    // gum tinge
+    const g2=ctx.createLinearGradient(0,-oh*.04,0,oh*.10);
+    g2.addColorStop(0,'rgba(200,75,80,.36)'); g2.addColorStop(1,'transparent');
+    ctx.fillStyle=g2; ctx.fillRect(-mw*.82,-oh*.04,mw*1.64,oh*.14);
+    // tooth dividers
+    ctx.strokeStyle='rgba(185,180,170,.34)'; ctx.lineWidth=.8;
+    const tw = mw*1.64/6;
+    for(let i=1;i<6;i++){ctx.beginPath();ctx.moveTo(-mw*.82+i*tw,-oh*.04);ctx.lineTo(-mw*.82+i*tw,oh*.43);ctx.stroke();}
+
+    // lower teeth
+    if(open > 0.38){
+      ctx.fillStyle = '#ede9e2';
+      ctx.beginPath();
+      ctx.roundRect(-mw*.66, oh*.56, mw*1.32, oh*.28, [3,3,0,0]);
+      ctx.fill();
+    }
+    // tongue (wide open)
+    if(open > 0.58){
+      ctx.beginPath();
+      ctx.ellipse(0, oh*.76, mw*.36, oh*.20, 0, 0, Math.PI*2);
+      ctx.fillStyle='#cc5566'; ctx.fill();
+      ctx.strokeStyle='rgba(160,42,52,.5)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(0,oh*.58); ctx.lineTo(0,oh*.90); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // ── upper lip ──
+  ctx.beginPath();
+  ctx.moveTo(-mw, 0);
+  ctx.bezierCurveTo(-mw*.52,-ulH*(bow*.90+.50), -mw*.16,-ulH*(bow*1.10+1.00), 0,-ulH*(bow*.58+.58));
+  ctx.bezierCurveTo( mw*.16,-ulH*(bow*1.10+1.00),  mw*.52,-ulH*(bow*.90+.50), mw, 0);
+  ctx.bezierCurveTo( mw*.88, 0,  mw*.50,-ulH*.36, -mw*.50,-ulH*.36);
+  ctx.lineTo(-mw*.88, 0);
+  ctx.closePath();
+  ctx.fillStyle = uc; ctx.fill();
+
+  // ── lower lip ──
+  ctx.beginPath();
+  ctx.moveTo(-mw, 0);
+  ctx.bezierCurveTo(-mw*.55, oh+llH*1.58,  mw*.55, oh+llH*1.58,  mw, 0);
+  ctx.bezierCurveTo( mw*.88, 0,  mw*.50, oh+llH*.56, -mw*.50, oh+llH*.56);
+  ctx.lineTo(-mw*.88, 0);
+  ctx.closePath();
+  ctx.fillStyle = lc; ctx.fill();
+
+  // ── corner depth dots ──
+  ctx.fillStyle = lk;
+  ctx.beginPath(); ctx.arc(-mw, 0, mw*.045, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc( mw, 0, mw*.045, 0, Math.PI*2); ctx.fill();
+
+  // ── lower-lip gloss ──
+  ctx.save();
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle   = 'rgba(255,240,248,.82)';
+  ctx.beginPath();
+  ctx.ellipse(-mw*.15, oh*.38+llH*.32, mw*.26, llH*.28, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ═══════════════════════════════
 //  DRAW
 // ═══════════════════════════════
 function redraw(){ if(!A.isPlaying) drawFrame(); }
@@ -1032,11 +1289,13 @@ function drawFrame(){
   const lipSz       = document.getElementById('mouthSz').value/100;
   const lipRot      = document.getElementById('lipRot').value*Math.PI/180;
   const lipWStretch = document.getElementById('lipW').value/100;
-  jawDrop(ctx,charObj.img,cdx,cdy,charObj.scale,
+  const skipJaw     = LIP.enabled && document.getElementById('lipDisableJaw').checked;
+  if(!skipJaw) jawDrop(ctx,charObj.img,cdx,cdy,charObj.scale,
     LM.mouth.x,LM.mouth.y,faceW,A.mouthOpen,
     lipSz,lipRot,lipWStretch);
 
   ctx.restore();
+  if(LIP.enabled) drawLipOverlay();
   if(setupMode) drawMarkers();
   drawBubble();
 }
